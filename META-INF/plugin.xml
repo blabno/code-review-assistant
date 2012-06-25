@@ -1,0 +1,27 @@
+<idea-plugin version="2">
+    <name>Code review assistant</name>
+    <description>Helps to do code review for set of revisions</description>
+    <version>1.0</version>
+    <vendor>IT Crowd</vendor>
+
+    <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
+    <idea-version since-build="107.105"/>
+
+    <project-components>
+        <component>
+            <implementation-class>pl.com.it_crowd.cra.model.CodeReviewAssistant</implementation-class>
+        </component>
+    </project-components>
+
+    <actions>
+        <action id="CodeReview" class="pl.com.it_crowd.cra.actions.CodeReviewAction" text="Code review" icon="/icons/code-review.png">
+            <add-to-group group-id="VcsToobarActions" anchor="after" relative-to-action="ChangesView.Rollback"/>
+            <add-to-group group-id="VcsGlobalGroup" anchor="after" relative-to-action="Vcs.UpdateProject"/>
+        </action>
+    </actions>
+
+    <depends>Subversion</depends>
+
+    <extensions defaultExtensionNs="com.intellij"></extensions>
+
+</idea-plugin>
