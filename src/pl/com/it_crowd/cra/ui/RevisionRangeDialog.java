@@ -4,7 +4,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
-import org.tmatesoft.svn.core.SVNException;
 import pl.com.it_crowd.cra.model.CodeReviewAssistant;
 
 import javax.swing.JButton;
@@ -21,6 +20,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 public class RevisionRangeDialog extends JDialog {
 // ------------------------------ FIELDS ------------------------------
@@ -116,14 +117,17 @@ public class RevisionRangeDialog extends JDialog {
             Messages.showWarningDialog(e.getMessage(), "Invalid End Revision");
             return;
         }
-        try {
-            assistant.setRevisionRange(startRevision, endRevision);
-        } catch (SVNException e) {
-            Messages.showWarningDialog(e.getMessage(), "Invalid Revision Range");
-            return;
-        }
+        assistant.setRevisionRange(startRevision, endRevision);
+        assistant.addPropertyChangeListener(new PropertyChangeListener() {
+            public void propertyChange(PropertyChangeEvent evt)
+            {
+                if (CodeReviewAssistant.STATE_PROPERTY.equals(evt.getPropertyName()) && !CodeReviewAssistant.State.LOADING.equals(evt.getNewValue())) {
+                    CodeReviewAssistantPanel.show(project);
+                    assistant.removePropertyChangeListener(this);
+                }
+            }
+        });
         dispose();
-        CodeReviewAssistantPanel.show(project);
     }
 
     /**

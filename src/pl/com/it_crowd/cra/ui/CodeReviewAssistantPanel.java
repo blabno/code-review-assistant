@@ -197,7 +197,7 @@ public class CodeReviewAssistantPanel {
         final ChangeDiffRequest request = new ChangeDiffRequest(CodeReviewAssistantPanel.this.project, changeList, context.getActionsFactory(),
             context.isShowFrame());
 
-        DiffRequest simpleRequest = null;
+        DiffRequest simpleRequest;
         try {
             request.quickCheckHaveStuff();
             simpleRequest = request.init(0);
