@@ -5,7 +5,10 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vcs.FileStatus;
+import com.intellij.openapi.vcs.VcsException;
 import com.intellij.openapi.vcs.changes.Change;
+import com.intellij.openapi.vcs.changes.ContentRevision;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -49,38 +52,63 @@ public class CodeReviewAssistant implements ProjectComponent {
 
     private File currentFile;
 
-    private final CollectingDiffStatusHandler diffStatusHandler = new CollectingDiffStatusHandler();
-
     private Project project;
 
     private RevisionRange revisionRange;
 
-    private final List<File> unmodifiableChangedFilesView;
-
     private State state = State.CLEAR;
 
-    public static enum State {
-        CLEAR,
-        LOADING,
-        LOADED
-    }
+    private final List<File> unmodifiableChangedFilesView;
 
 // -------------------------- STATIC METHODS --------------------------
 
-    private static Change createChange(SvnVcs vcs, File file, int startRevision, int endRevision)
+    private static FileStatus convert(SVNStatusType modificationType)
+    {
+        FileStatus fileStatus;
+        if (SVNStatusType.STATUS_MODIFIED.equals(modificationType)) {
+            fileStatus = FileStatus.MODIFIED;
+        } else if (SVNStatusType.STATUS_ADDED.equals(modificationType)) {
+            fileStatus = FileStatus.ADDED;
+        } else if (SVNStatusType.STATUS_MODIFIED.equals(modificationType)) {
+            fileStatus = FileStatus.MERGE;
+        } else if (SVNStatusType.STATUS_IGNORED.equals(modificationType)) {
+            fileStatus = FileStatus.IGNORED;
+        } else if (SVNStatusType.STATUS_NORMAL.equals(modificationType)) {
+            fileStatus = FileStatus.NOT_CHANGED;
+        } else if (SVNStatusType.STATUS_DELETED.equals(modificationType)) {
+            fileStatus = FileStatus.DELETED;
+        } else {
+            System.out.println("Unknown modification type:" + modificationType);
+            fileStatus = FileStatus.UNKNOWN;
+        }
+        return fileStatus;
+    }
+
+    private static Change createChange(SvnVcs vcs, File file, SVNStatusType modificationType, int startRevision, int endRevision)
     {
         Change change;
         final SVNURL repositoryRootURL = vcs.getInfo(file).getRepositoryRootURL();
         final SVNURL urlForFile = vcs.getSvnFileUrlMapping().getUrlForFile(file);
+        assert urlForFile != null;
         final String relativePath = urlForFile.getPath().substring(repositoryRootURL.getPath().length());
         final SVNRepository repository;
+        final FileStatus fileStatus;
         try {
             repository = vcs.createRepository(repositoryRootURL);
         } catch (SVNException ex) {
             throw new RuntimeException(ex);
         }
-        change = new Change(new MyDiffContentRevision(relativePath, repository, startRevision),
-            new MyDiffContentRevision(relativePath, repository, endRevision));
+        fileStatus = convert(modificationType);
+
+        MyDiffContentRevision beforeRevision = null;
+        MyDiffContentRevision afterRevision = null;
+        if (!FileStatus.ADDED.equals(fileStatus)) {
+            beforeRevision = new MyDiffContentRevision(relativePath, repository, startRevision);
+        }
+        if (!FileStatus.DELETED.equals(fileStatus)) {
+            afterRevision = new MyDiffContentRevision(relativePath, repository, endRevision);
+        }
+        change = new Change(beforeRevision, afterRevision, fileStatus);
         return change;
     }
 
@@ -196,7 +224,8 @@ public class CodeReviewAssistant implements ProjectComponent {
                 final SVNURL wcRootUrl = wcRoot.getUrl();
                 try {
                     svnVcs.createDiffClient()
-                        .doDiffStatus(wcRootUrl, svnRevision, SVNRevision.create(endRevision), svnRevision, SVNDepth.INFINITY, true, diffStatusHandler);
+                        .doDiffStatus(wcRootUrl, svnRevision, SVNRevision.create(endRevision), svnRevision, SVNDepth.INFINITY, true,
+                            new CollectingDiffStatusHandler());
                 } catch (SVNException e) {
                     throw new RuntimeException("Cannot get list of changed files from " + wcRootUrl, e);
                 }
@@ -209,6 +238,7 @@ public class CodeReviewAssistant implements ProjectComponent {
                 State oldState = state;
                 state = State.LOADED;
                 changeSupport.firePropertyChange(STATE_PROPERTY, oldState, state);
+                runDiffInitializer();
             }
 
             @Override
@@ -229,6 +259,62 @@ public class CodeReviewAssistant implements ProjectComponent {
         changeSupport.firePropertyChange(CHANGED_FILES_PROPERTY, null, changedFiles);
     }
 
+    private void runDiffInitializer()
+    {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Initiating diffs") {
+            public void run(@NotNull ProgressIndicator progressIndicator)
+            {
+                final List<Change> changeList = new ArrayList<Change>(changes);
+                for (Change change : changeList) {
+                    if (progressIndicator.isCanceled()) {
+                        break;
+                    }
+                    final ContentRevision afterRevision = change.getAfterRevision();
+                    final ContentRevision beforeRevision = change.getBeforeRevision();
+                    String progressText = null;
+                    if (beforeRevision != null) {
+                        progressText = beforeRevision.getFile().getName();
+                    } else if (afterRevision != null) {
+                        progressText = afterRevision.getFile().getName();
+                    }
+                    progressIndicator.setText(progressText);
+                    if (beforeRevision != null) {
+                        try {
+                            /**We just want to initiate content*/
+                            //noinspection ConstantConditions
+
+                            beforeRevision.getContent();
+                        } catch (VcsException ignore) {
+                        }
+                    }
+
+                    if (afterRevision != null) {
+                        try {
+                            /**We just want to initiate content*/
+                            //noinspection ConstantConditions
+                            afterRevision.getContent();
+                        } catch (VcsException ignore) {
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancel()
+            {
+                System.out.println("onCancel");
+            }
+        });
+    }
+
+// -------------------------- ENUMERATIONS --------------------------
+
+    public static enum State {
+        CLEAR,
+        LOADING,
+        LOADED
+    }
+
 // -------------------------- INNER CLASSES --------------------------
 
     private class CollectingDiffStatusHandler implements ISVNDiffStatusHandler {
@@ -244,11 +330,10 @@ public class CodeReviewAssistant implements ProjectComponent {
             final int endRevision = getRevisionRange().getEndRevision();
             final SVNStatusType modificationType = svnDiffStatus.getModificationType();
             final File svnDiffStatusFile = new File(vcs.getSvnFileUrlMapping().getLocalPath(svnDiffStatus.getURL().toString()));
-            if (!SVNStatusType.UNCHANGED.equals(modificationType) && !SVNStatusType.STATUS_NONE.equals(modificationType) && !SVNStatusType.STATUS_DELETED
-                .equals(modificationType) && svnDiffStatusFile.exists()) {
+            if (!SVNStatusType.UNCHANGED.equals(modificationType) && !SVNStatusType.STATUS_NONE.equals(modificationType)) {
                 changedFiles.add(svnDiffStatusFile);
                 if (SVNNodeKind.FILE.equals(svnDiffStatus.getKind())) {
-                    changes.add(createChange(vcs, svnDiffStatusFile, startRevision, endRevision));
+                    changes.add(createChange(vcs, svnDiffStatusFile, svnDiffStatus.getModificationType(), startRevision, endRevision));
                 }
             }
         }

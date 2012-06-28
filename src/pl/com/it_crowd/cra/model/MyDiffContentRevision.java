@@ -12,16 +12,19 @@ import org.tmatesoft.svn.core.io.SVNRepository;
 import java.nio.charset.Charset;
 
 public class MyDiffContentRevision extends DiffContentRevision {
+// ------------------------------ FIELDS ------------------------------
 
     private String myContents;
+
+    private FilePath myFilePath;
+
+    private String myPath;
 
     private SVNRepository myRepository;
 
     private long revision;
 
-    private String myPath;
-
-    private FilePath myFilePath;
+// --------------------------- CONSTRUCTORS ---------------------------
 
     public MyDiffContentRevision(String path, @org.jetbrains.annotations.NotNull SVNRepository repos, long revision)
     {
@@ -31,6 +34,11 @@ public class MyDiffContentRevision extends DiffContentRevision {
         this.myPath = path;
         this.myFilePath = VcsUtil.getFilePath(path);
     }
+
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface ContentRevision ---------------------
 
     public String getContent() throws VcsException
     {
