@@ -1,6 +1,7 @@
 package pl.com.it_crowd.cra.ui;
 
 import com.intellij.ide.DataManager;
+import com.intellij.ide.actions.OpenFileAction;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.ActionPlaces;
@@ -27,19 +28,26 @@ import com.intellij.ui.content.ContentFactory;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.util.containers.Convertor;
+import com.intellij.vcsUtil.VcsUtil;
+import org.jetbrains.annotations.Nullable;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
 import pl.com.it_crowd.cra.model.AssistantHelper;
 import pl.com.it_crowd.cra.model.CodeReviewAssistant;
 
+import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToolBar;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -52,6 +60,10 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
@@ -71,6 +83,8 @@ public class CodeReviewAssistantPanel {
     private JPanel contentPane;
 
     private JButton diffButton;
+
+    private CodeReviewAssistantPanel.JumpToSourceAction jumpToSourceAction;
 
     private Project project;
 
@@ -169,7 +183,6 @@ public class CodeReviewAssistantPanel {
         col.setMaxWidth(width);
         col.setPreferredWidth(width);
         table.setShowGrid(false);
-
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e)
@@ -183,6 +196,34 @@ public class CodeReviewAssistantPanel {
                     assistant.selectFile(null);
                 } else {
                     assistant.selectFile(index);
+                }
+            }
+        });
+        final JPopupMenu popupMenu = new JPopupMenu();
+        jumpToSourceAction = new JumpToSourceAction();
+        final JMenuItem jumpToSourceMenuItem = new JMenuItem(jumpToSourceAction);
+        jumpToSourceMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, 0));
+        popupMenu.add(jumpToSourceMenuItem);
+        /**
+         * We can't table.setComponentPopupMenu(popupMenu); because it will block right clik row selection
+         */
+        table.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent me)
+            {
+                if (SwingUtilities.isRightMouseButton(me)) {
+                    int row = table.rowAtPoint(me.getPoint());
+                    table.clearSelection();
+                    table.addRowSelectionInterval(row, row);
+                    popupMenu.show(table, me.getX(), me.getY());
+                }
+            }
+        });
+        table.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e)
+            {
+                if (e.getKeyCode() == KeyEvent.VK_F4 && jumpToSourceAction.isEnabled()) {
+                    jumpToSourceAction.actionPerformed(null);
                 }
             }
         });
@@ -391,6 +432,46 @@ public class CodeReviewAssistantPanel {
         public void removeTableModelListener(TableModelListener listener)
         {
             listeners.remove(listener);
+        }
+    }
+
+    private class JumpToSourceAction extends AbstractAction {
+// --------------------------- CONSTRUCTORS ---------------------------
+
+        private JumpToSourceAction()
+        {
+            super("Jump to source");
+            assistant.addPropertyChangeListener(new PropertyChangeListener() {
+                public void propertyChange(PropertyChangeEvent evt)
+                {
+                    if (CodeReviewAssistant.CURRENT_FILE_PROPERTY.equals(evt.getPropertyName())) {
+                        firePropertyChange("enabled", isEnabled((File) evt.getOldValue()), isEnabled((File) evt.getNewValue()));
+                    }
+                }
+            });
+        }
+
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface Action ---------------------
+
+        @Override
+        public boolean isEnabled()
+        {
+            return isEnabled(assistant.getCurrentFile());
+        }
+
+// --------------------- Interface ActionListener ---------------------
+
+        public void actionPerformed(@Nullable ActionEvent e)
+        {
+            OpenFileAction.openFile(VcsUtil.getVirtualFile(assistant.getCurrentFile()), project);
+        }
+
+        private boolean isEnabled(File file)
+        {
+            return file != null && file.isFile();
         }
     }
 }
