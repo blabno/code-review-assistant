@@ -95,7 +95,7 @@ public class CodeReviewAssistantPanel {
                 }
             });
             toolWindow.getContentManager().addContent(content);
-            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/code-review.png")));
+            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/code-review-small.png")));
         }
         return toolWindow;
     }

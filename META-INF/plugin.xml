@@ -2,7 +2,7 @@
     <name>Code review assistant</name>
     <description>Helps to do code review for set of revisions</description>
     <version>1.0</version>
-    <vendor>IT Crowd</vendor>
+    <vendor email="contact@it-crowd.com.pl" url="http://it-crowd.com.pl" logo="/icons/code-review.png">IT Crowd</vendor>
 
     <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
     <idea-version since-build="107.105"/>
@@ -14,7 +14,7 @@
     </project-components>
 
     <actions>
-        <action id="CodeReview" class="pl.com.it_crowd.cra.actions.CodeReviewAction" text="Code review" icon="/icons/code-review.png">
+        <action id="CodeReview" class="pl.com.it_crowd.cra.actions.CodeReviewAction" text="Code review" icon="/icons/code-review-small.png">
             <add-to-group group-id="VcsToobarActions" anchor="after" relative-to-action="ChangesView.Rollback"/>
             <add-to-group group-id="VcsGlobalGroup" anchor="after" relative-to-action="Vcs.UpdateProject"/>
         </action>
