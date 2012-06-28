@@ -27,6 +27,7 @@ import com.intellij.ui.content.ContentFactory;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.util.containers.Convertor;
+import org.tmatesoft.svn.core.wc.SVNStatusType;
 import pl.com.it_crowd.cra.model.AssistantHelper;
 import pl.com.it_crowd.cra.model.CodeReviewAssistant;
 
@@ -44,6 +45,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -78,7 +80,7 @@ public class CodeReviewAssistantPanel {
 
     private JTable table;
 
-    // -------------------------- STATIC METHODS --------------------------
+// -------------------------- STATIC METHODS --------------------------
 
     private static ToolWindow getReviewAssistantWindow(Project project)
     {
@@ -161,6 +163,13 @@ public class CodeReviewAssistantPanel {
     private void createUIComponents()
     {
         table = new JTable(new ChangedFilesModel());
+        TableColumn col = table.getColumnModel().getColumn(0);
+        final int width = 60;
+        col.setMinWidth(width);
+        col.setMaxWidth(width);
+        col.setPreferredWidth(width);
+        table.setShowGrid(false);
+
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent e)
@@ -281,7 +290,7 @@ public class CodeReviewAssistantPanel {
         return contentPane;
     }
 
-    // -------------------------- INNER CLASSES --------------------------
+// -------------------------- INNER CLASSES --------------------------
 
     private class ChangedFilesModel implements TableModel, PropertyChangeListener {
 // ------------------------------ FIELDS ------------------------------
@@ -319,17 +328,27 @@ public class CodeReviewAssistantPanel {
 
         public int getColumnCount()
         {
-            return 1;
+            return 2;
         }
 
         public String getColumnName(int columnIndex)
         {
-            return "File name";
+            switch (columnIndex) {
+                case 0:
+                    return "Status";
+                default:
+                    return "File name";
+            }
         }
 
         public Class<?> getColumnClass(int columnIndex)
         {
-            return String.class;
+            switch (columnIndex) {
+                case 0:
+                    return SVNStatusType.class;
+                default:
+                    return String.class;
+            }
         }
 
         public boolean isCellEditable(int rowIndex, int columnIndex)
@@ -348,6 +367,8 @@ public class CodeReviewAssistantPanel {
             }
             switch (columnIndex) {
                 case 0:
+                    return assistant.getFileStatus(file);
+                case 1:
                     final File parentFile = canonicalFile.getParentFile();
                     return parentFile == null ? canonicalFile : canonicalFile.getName() + " (" + parentFile.getPath() + ")";
                 default:

@@ -31,7 +31,9 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CodeReviewAssistant implements ProjectComponent {
 // ------------------------------ FIELDS ------------------------------
@@ -51,6 +53,8 @@ public class CodeReviewAssistant implements ProjectComponent {
     private List<Change> changes = new ArrayList<Change>();
 
     private File currentFile;
+
+    private final Map<File, SVNStatusType> fileStatuses = new HashMap<File, SVNStatusType>();
 
     private Project project;
 
@@ -166,7 +170,7 @@ public class CodeReviewAssistant implements ProjectComponent {
 
     public void projectClosed()
     {
-        changedFiles.clear();
+        clear();
         changeSupport.firePropertyChange(CHANGED_FILES_PROPERTY, null, changedFiles);
     }
 
@@ -180,6 +184,11 @@ public class CodeReviewAssistant implements ProjectComponent {
     public List<File> getChangedFiles()
     {
         return unmodifiableChangedFilesView;
+    }
+
+    public SVNStatusType getFileStatus(File file)
+    {
+        return fileStatuses.get(file);
     }
 
     public void removePropertyChangeListener(PropertyChangeListener listener)
@@ -256,6 +265,7 @@ public class CodeReviewAssistant implements ProjectComponent {
     {
         changedFiles.clear();
         changes.clear();
+        fileStatuses.clear();
         changeSupport.firePropertyChange(CHANGED_FILES_PROPERTY, null, changedFiles);
     }
 
@@ -330,8 +340,12 @@ public class CodeReviewAssistant implements ProjectComponent {
             final int endRevision = getRevisionRange().getEndRevision();
             final SVNStatusType modificationType = svnDiffStatus.getModificationType();
             final File svnDiffStatusFile = new File(vcs.getSvnFileUrlMapping().getLocalPath(svnDiffStatus.getURL().toString()));
-            if (!SVNStatusType.UNCHANGED.equals(modificationType) && !SVNStatusType.STATUS_NONE.equals(modificationType)) {
+            if (SVNStatusType.STATUS_DELETED.equals(modificationType)) {
                 changedFiles.add(svnDiffStatusFile);
+                fileStatuses.put(svnDiffStatusFile, modificationType);
+            } else if (!SVNStatusType.UNCHANGED.equals(modificationType) && !SVNStatusType.STATUS_NONE.equals(modificationType)) {
+                changedFiles.add(svnDiffStatusFile);
+                fileStatuses.put(svnDiffStatusFile, modificationType);
                 if (SVNNodeKind.FILE.equals(svnDiffStatus.getKind())) {
                     changes.add(createChange(vcs, svnDiffStatusFile, svnDiffStatus.getModificationType(), startRevision, endRevision));
                 }
