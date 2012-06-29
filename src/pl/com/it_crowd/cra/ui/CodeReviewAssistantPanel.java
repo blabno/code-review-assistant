@@ -103,7 +103,7 @@ public class CodeReviewAssistantPanel {
         if (toolWindow == null) {
             toolWindow = toolWindowManager.registerToolWindow(CODE_REVIEW_ASSISTANT_TOOLWINDOW, true, ToolWindowAnchor.BOTTOM);
             CodeReviewAssistantPanel assistantPanel = new CodeReviewAssistantPanel(project);
-            final Content content = ContentFactory.SERVICE.getInstance().createContent(assistantPanel.$$$getRootComponent$$$(), "Code review assistant", false);
+            final Content content = ContentFactory.SERVICE.getInstance().createContent(assistantPanel.$$$getRootComponent$$$(), null, false);
             content.setDisposer(new Disposable() {
                 public void dispose()
                 {

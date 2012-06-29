@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="pl.com.it_crowd.cra.ui.QANotesManagementForm">
+  <grid id="27dc6" binding="rootComponent" layout-manager="GridLayoutManager" row-count="2" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+    <margin top="0" left="0" bottom="0" right="0"/>
+    <constraints>
+      <xy x="20" y="20" width="964" height="558"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <toolbar id="5015d">
+        <constraints>
+          <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false">
+            <preferred-size width="-1" height="20"/>
+          </grid>
+        </constraints>
+        <properties>
+          <floatable value="false"/>
+        </properties>
+        <border type="none"/>
+        <children>
+          <component id="6d9cb" class="javax.swing.JButton" binding="closeButton">
+            <constraints/>
+            <properties>
+              <icon value="actions/cancel.png"/>
+              <text value=""/>
+            </properties>
+          </component>
+          <component id="878bf" class="javax.swing.JButton" binding="scanCodeButton">
+            <constraints/>
+            <properties>
+              <text value="Scan code"/>
+            </properties>
+          </component>
+          <component id="2ed15" class="javax.swing.JLabel">
+            <constraints/>
+            <properties>
+              <labelFor value="57b94"/>
+              <text value="Default author"/>
+            </properties>
+          </component>
+          <component id="57b94" class="javax.swing.JTextField" binding="defaultAuthor">
+            <constraints/>
+            <properties/>
+          </component>
+          <component id="4f335" class="javax.swing.JLabel">
+            <constraints/>
+            <properties>
+              <labelFor value="e23de"/>
+              <text value="Default revision"/>
+            </properties>
+          </component>
+          <component id="e23de" class="javax.swing.JTextField" binding="defaultRevision">
+            <constraints/>
+            <properties/>
+          </component>
+          <component id="94b5e" class="javax.swing.JButton" binding="applyDefaultsButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <text value="Apply defaults"/>
+            </properties>
+          </component>
+        </children>
+      </toolbar>
+      <grid id="3e2e2" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+        <margin top="0" left="0" bottom="0" right="0"/>
+        <constraints>
+          <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+        </constraints>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <nested-form id="23d3d" form-file="pl/com/it_crowd/cra/ui/QANotesList.form" binding="qaNotesList" custom-create="true">
+            <constraints>
+              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+            </constraints>
+          </nested-form>
+        </children>
+      </grid>
+      <nested-form id="b10d9" form-file="pl/com/it_crowd/cra/ui/QANoteDetails.form" binding="qaNoteDetails" custom-create="true">
+        <constraints>
+          <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="1" fill="0" indent="0" use-parent-layout="false"/>
+        </constraints>
+      </nested-form>
+    </children>
+  </grid>
+</form>

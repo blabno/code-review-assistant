@@ -11,6 +11,9 @@
         <component>
             <implementation-class>pl.com.it_crowd.cra.model.CodeReviewAssistant</implementation-class>
         </component>
+        <component>
+            <implementation-class>pl.com.it_crowd.cra.model.QANoteManager</implementation-class>
+        </component>
     </project-components>
 
     <actions>
@@ -18,10 +21,14 @@
             <add-to-group group-id="VcsToobarActions" anchor="after" relative-to-action="ChangesView.Rollback"/>
             <add-to-group group-id="VcsGlobalGroup" anchor="after" relative-to-action="Vcs.UpdateProject"/>
         </action>
+        <action id="OpenQANotesManager" class="pl.com.it_crowd.cra.actions.OpenQANotesManager" text="Open QANotes manager"
+                icon="/icons/qa-note-manager-small.png">
+            <add-to-group group-id="MainToolBar" anchor="last"/>
+        </action>
     </actions>
 
     <depends>Subversion</depends>
 
-    <extensions defaultExtensionNs="com.intellij"></extensions>
+    <extensions defaultExtensionNs="com.intellij"/>
 
 </idea-plugin>
