@@ -1,16 +1,19 @@
 package pl.com.it_crowd.cra.model;
 
+import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ProjectComponent;
+import com.intellij.openapi.components.Storage;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.ui.Messages;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QANoteScanner;
+import pl.com.it_crowd.youtrack.api.IssueWrapper;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -24,41 +27,26 @@ import java.util.Iterator;
 import java.util.List;
 
 //TODO would be great to first save all edited files to disk and then run the scanner
-public class QANoteManager implements ProjectComponent {
+@com.intellij.openapi.components.State(
+    name = QANoteManager.COMPONENT_NAME,
+    storages = {@Storage(
+        file = "$PROJECT_FILE$")})
+public class QANoteManager implements ProjectComponent, PersistentStateComponent<QANoteManager.State> {
 // ------------------------------ FIELDS ------------------------------
+
+    public static final String COMPONENT_NAME = "QANoteManager";
 
     public static final String QA_NOTES_PROPERTY = "qaNotes";
 
     public static final String SELECTED_NOTE = "selectedNote";
 
-    public void setDefaultAuthor(String defaultAuthor)
-    {
-        this.defaultAuthor = defaultAuthor;
-    }
+    private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
 
     private String defaultAuthor;
 
     private String defaultRevision;
 
-    public String getDefaultRevision()
-    {
-        return defaultRevision;
-    }
-
-    public void setDefaultRevision(String defaultRevision)
-    {
-        this.defaultRevision = defaultRevision;
-    }
-
-    private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
-
-    private final List<QANote> qaNotes = new ArrayList<QANote>();
-
-    private final List<QANote> unmodifiableQANotes;
-
-    private QANoteScanner scanner;
-
-    private QANote selectedNote;
+    private Project project;
 
     private PropertyChangeListener qaNotePropertyChangeListener = new PropertyChangeListener() {
         public void propertyChange(PropertyChangeEvent evt)
@@ -79,15 +67,47 @@ public class QANoteManager implements ProjectComponent {
         }
     };
 
-    public QANoteManager()
+    private final List<QANote> qaNotes = new ArrayList<QANote>();
+
+    private QANoteScanner scanner;
+
+    private QANote selectedNote;
+
+    private final List<QANote> unmodifiableQANotes;
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+    public QANoteManager(Project project)
     {
+        this.project = project;
         unmodifiableQANotes = Collections.unmodifiableList(qaNotes);
     }
-    // --------------------- GETTER / SETTER METHODS ---------------------
+
+// --------------------- GETTER / SETTER METHODS ---------------------
 
     public String getDefaultAuthor()
     {
         return defaultAuthor;
+    }
+
+    public void setDefaultAuthor(String defaultAuthor)
+    {
+        this.defaultAuthor = defaultAuthor;
+    }
+
+    public String getDefaultRevision()
+    {
+        return defaultRevision;
+    }
+
+    public void setDefaultRevision(String defaultRevision)
+    {
+        this.defaultRevision = defaultRevision;
+    }
+
+    public Project getProject()
+    {
+        return project;
     }
 
     @Nullable
@@ -119,30 +139,23 @@ public class QANoteManager implements ProjectComponent {
         return "QANoteManager";
     }
 
+// --------------------- Interface PersistentStateComponent ---------------------
+
+    public State getState()
+    {
+        return new State(defaultAuthor);
+    }
+
+    public void loadState(State state)
+    {
+        this.defaultAuthor = state.defaultAuthor;
+    }
+
 // --------------------- Interface ProjectComponent ---------------------
 
     public void projectOpened()
     {
         removeNotes();
-    }
-
-    private void loadQANotesFromCode()
-    {
-        ProgressManager.getInstance().run(new Task.Backgroundable(getProject(), "Looking for QA notes") {
-            public void run(@NotNull ProgressIndicator progressIndicator)
-            {
-//                TODO use progressIndicator
-                final File directoryToScan = new File(getProject().getBasePath());
-                scanner.setDirectoryToScan(directoryToScan);
-                removeNotes();
-                synchronized (qaNotes) {
-                    for (QANote note : scanner.getQANotes()) {
-                        addQANote(note);
-                    }
-                }
-                changeSupport.firePropertyChange(QA_NOTES_PROPERTY, null, unmodifiableQANotes);
-            }
-        });
     }
 
     public void projectClosed()
@@ -155,58 +168,11 @@ public class QANoteManager implements ProjectComponent {
         }
     }
 
-
 // -------------------------- OTHER METHODS --------------------------
 
     public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener)
     {
         changeSupport.addPropertyChangeListener(propertyName, listener);
-    }
-
-    public File getFile(QANote note) throws FileNotFoundException
-    {
-        return scanner.getFile(note);
-    }
-
-    public Project getProject()
-    {
-        //        TODO get project in better way
-        return ProjectManager.getInstance().getOpenProjects()[0];
-    }
-
-    public List<QANote> getQANotes()
-    {
-        return qaNotes;
-    }
-
-    private void removeNotes()
-    {
-        synchronized (qaNotes) {
-            for (Iterator<QANote> iterator = qaNotes.iterator(); iterator.hasNext(); ) {
-                QANote note = iterator.next();
-                note.removePropertyChangeListener(qaNotePropertyChangeListener);
-                iterator.remove();
-            }
-        }
-    }
-
-    /**
-     * Adds QA note and attaches property change listener.
-     * Remember to synchronize on #qaNotes before calling this method.
-     *
-     * @param note note to add
-     */
-    private void addQANote(QANote note)
-    {
-        note.addPropertyChangeListener(qaNotePropertyChangeListener);
-        qaNotes.add(note);
-    }
-
-    public void selectNote(@Nullable QANote note)
-    {
-        final QANote oldValue = this.selectedNote;
-        this.selectedNote = note;
-        changeSupport.firePropertyChange(SELECTED_NOTE, oldValue, note);
     }
 
     /**
@@ -219,9 +185,9 @@ public class QANoteManager implements ProjectComponent {
          */
         scanner = new QANoteScanner();
         scanner.setDefaultAuthor(getDefaultAuthor());
-        scanner.setRootPath(getProject().getBasePath());
+        scanner.setRootPath(project.getBasePath());
         //TODO save all opened files to disk before adjusting
-        ProgressManager.getInstance().run(new Task.Backgroundable(getProject(), "Adjusting QA notes code") {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Adjusting QA notes code") {
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
 //                TODO use progressIndicator
@@ -245,6 +211,15 @@ public class QANoteManager implements ProjectComponent {
         //TODO synchronize all opened files with disk
     }
 
+    public void createTicket(QANote note)
+    {
+        if (!StringUtils.isBlank(note.getTicket())) {
+            throw new IllegalStateException("QANote already has assigned ticket: " + note.getTicket());
+        }
+        final IssueWrapper ticket = YoutrackTicketManager.getInstance(project).createTicket(note.getDescription(), note.getFileName());
+        note.setTicket(ticket.getId());
+    }
+
     public void finish() throws IOException
     {
         synchronized (qaNotes) {
@@ -253,5 +228,84 @@ public class QANoteManager implements ProjectComponent {
             }
         }
         removeNotes();
+    }
+
+    public File getFile(QANote note) throws FileNotFoundException
+    {
+        return scanner.getFile(note);
+    }
+
+    public List<QANote> getQANotes()
+    {
+        return qaNotes;
+    }
+
+    public void selectNote(@Nullable QANote note)
+    {
+        final QANote oldValue = this.selectedNote;
+        this.selectedNote = note;
+        changeSupport.firePropertyChange(SELECTED_NOTE, oldValue, note);
+    }
+
+    /**
+     * Adds QA note and attaches property change listener.
+     * Remember to synchronize on #qaNotes before calling this method.
+     *
+     * @param note note to add
+     */
+    private void addQANote(QANote note)
+    {
+        note.addPropertyChangeListener(qaNotePropertyChangeListener);
+        qaNotes.add(note);
+    }
+
+    private void loadQANotesFromCode()
+    {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Looking for QA notes") {
+            public void run(@NotNull ProgressIndicator progressIndicator)
+            {
+//                TODO use progressIndicator
+                final File directoryToScan = new File(getProject().getBasePath());
+                scanner.setDirectoryToScan(directoryToScan);
+                removeNotes();
+                synchronized (qaNotes) {
+                    for (QANote note : scanner.getQANotes()) {
+                        addQANote(note);
+                    }
+                }
+                changeSupport.firePropertyChange(QA_NOTES_PROPERTY, null, unmodifiableQANotes);
+            }
+        });
+    }
+
+    private void removeNotes()
+    {
+        synchronized (qaNotes) {
+            for (Iterator<QANote> iterator = qaNotes.iterator(); iterator.hasNext(); ) {
+                QANote note = iterator.next();
+                note.removePropertyChangeListener(qaNotePropertyChangeListener);
+                iterator.remove();
+            }
+        }
+    }
+
+// -------------------------- INNER CLASSES --------------------------
+
+    public static class State {
+// ------------------------------ FIELDS ------------------------------
+
+        public String defaultAuthor;
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+        public State()
+        {
+        }
+
+        public State(String defaultAuthor)
+        {
+            this();
+            this.defaultAuthor = defaultAuthor;
+        }
     }
 }

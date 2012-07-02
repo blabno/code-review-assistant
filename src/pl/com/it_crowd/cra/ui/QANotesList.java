@@ -1,11 +1,15 @@
 package pl.com.it_crowd.cra.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 
+import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -17,6 +21,7 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
@@ -24,6 +29,13 @@ import java.util.List;
 
 public class QANotesList {
 // ------------------------------ FIELDS ------------------------------
+
+    private Action createTicketsAction = new AbstractAction("Create tickets") {
+        public void actionPerformed(ActionEvent e)
+        {
+            createTickets();
+        }
+    };
 
     private QANoteManager noteManager;
 
@@ -39,6 +51,13 @@ public class QANotesList {
         $$$setupUI$$$();
     }
 
+// --------------------- GETTER / SETTER METHODS ---------------------
+
+    public Action getCreateTicketsAction()
+    {
+        return createTicketsAction;
+    }
+
 // -------------------------- OTHER METHODS --------------------------
 
     /**
@@ -47,6 +66,25 @@ public class QANotesList {
     public JComponent $$$getRootComponent$$$()
     {
         return rootComponent;
+    }
+
+    public void createTickets()
+    {
+        final ListSelectionModel selectionModel = table.getSelectionModel();
+        if (selectionModel.isSelectionEmpty()) {
+            return;
+        }
+        int createdTicekts = 0;
+        for (int index = selectionModel.getMinSelectionIndex(); index <= selectionModel.getMaxSelectionIndex(); index++) {
+            if (selectionModel.isSelectedIndex(index)) {
+                final QANote note = noteManager.getQANotes().get(index);
+                if (StringUtils.isBlank(note.getTicket())) {
+                    noteManager.createTicket(note);
+                    createdTicekts++;
+                }
+            }
+        }
+        Messages.showInfoMessage(String.format("Created %d tickets", createdTicekts), "Create Tickets");
     }
 
     /**

@@ -32,6 +32,12 @@
               <text value="Scan code"/>
             </properties>
           </component>
+          <component id="58ddd" class="javax.swing.JButton" binding="createTicketsButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <text value="Create tickets"/>
+            </properties>
+          </component>
           <component id="2ed15" class="javax.swing.JLabel">
             <constraints/>
             <properties>

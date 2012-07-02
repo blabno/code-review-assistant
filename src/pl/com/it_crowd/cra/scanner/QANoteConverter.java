@@ -18,7 +18,8 @@ public class QANoteConverter {
         this.exceptionHandler = exceptionHandler;
     }
 
-    // -------------------------- OTHER METHODS --------------------------
+// -------------------------- OTHER METHODS --------------------------
+
     @NotNull
     public QANote getAsObject(String comment)
     {
@@ -56,7 +57,7 @@ public class QANoteConverter {
             builder.append(" * @reporter: ").append(note.getReporter()).append("\n");
         }
         if (!StringUtils.isBlank(note.getTicket())) {
-            builder.append(" * @ticket: ").append(note.getReporter()).append("\n");
+            builder.append(" * @ticket: ").append(note.getTicket()).append("\n");
         }
         if (!StringUtils.isBlank(note.getRecipient())) {
             builder.append(" * @recipient: ").append(note.getRecipient()).append("\n");
@@ -77,29 +78,6 @@ public class QANoteConverter {
         }
     }
 
-    private String extractTicket(String comment)
-    {
-        final Matcher matcher = QANoteScanner.TICKET_TAG_PATTERN.matcher(comment);
-        if (matcher.find()) {
-            return matcher.group(1);
-        } else {
-            return null;
-        }
-    }
-
-    private Long extractNoteId(String comment)
-    {
-        final Matcher matcher = QANoteScanner.NOTE_ID_TAG_PATTERN.matcher(comment);
-        if (matcher.find()) {
-            try {
-                return new Long(matcher.group(1));
-            } catch (NumberFormatException e) {
-                handleException(e);
-            }
-        }
-        return null;
-    }
-
     private String extractDescription(String comment)
 
     {
@@ -113,12 +91,26 @@ public class QANoteConverter {
                 line = descriptionPart.trim();
                 descriptionPart = line.replaceAll("(\\*/)|(^([/][*])*\\s*\\*+)|" + QANoteScanner.QA_TAGS + "|" + QANoteScanner.AUTHOR_TAG_PATTERN_STRING + "|"
                     + QANoteScanner.RECIPIENT_TAG_PATTERN_STRING + "|" + QANoteScanner.RULE_ID_TAG_PATTERN_STRING + "|"
-                    + QANoteScanner.NOTE_ID_TAG_PATTERN_STRING + "|" + QANoteScanner.REVISION_TAG_PATTERN_STRING + "|//", "");
+                    + QANoteScanner.TICKET_TAG_PATTERN_STRING + "|" + QANoteScanner.NOTE_ID_TAG_PATTERN_STRING + "|" + QANoteScanner.REVISION_TAG_PATTERN_STRING
+                    + "|//", "");
             } while (!line.equals(descriptionPart));
             stringBuilder.append(descriptionPart);
             stringBuilder.append("\n");
         }
         return stringBuilder.toString().trim();
+    }
+
+    private Long extractNoteId(String comment)
+    {
+        final Matcher matcher = QANoteScanner.NOTE_ID_TAG_PATTERN.matcher(comment);
+        if (matcher.find()) {
+            try {
+                return new Long(matcher.group(1));
+            } catch (NumberFormatException e) {
+                handleException(e);
+            }
+        }
+        return null;
     }
 
     private String extractRecipient(String comment)
@@ -153,6 +145,16 @@ public class QANoteConverter {
             }
         }
         return null;
+    }
+
+    private String extractTicket(String comment)
+    {
+        final Matcher matcher = QANoteScanner.TICKET_TAG_PATTERN.matcher(comment);
+        if (matcher.find()) {
+            return matcher.group(1);
+        } else {
+            return null;
+        }
     }
 
     private void handleException(Exception e)

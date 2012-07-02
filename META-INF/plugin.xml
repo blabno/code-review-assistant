@@ -14,6 +14,9 @@
         <component>
             <implementation-class>pl.com.it_crowd.cra.model.QANoteManager</implementation-class>
         </component>
+        <component>
+            <implementation-class>pl.com.it_crowd.cra.model.YoutrackTicketManager</implementation-class>
+        </component>
     </project-components>
 
     <actions>
@@ -29,6 +32,8 @@
 
     <depends>Subversion</depends>
 
-    <extensions defaultExtensionNs="com.intellij"/>
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable instance="pl.com.it_crowd.cra.model.CodeReviewProjectConfigurable"/>
+    </extensions>
 
 </idea-plugin>

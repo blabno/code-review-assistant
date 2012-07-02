@@ -9,6 +9,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import com.intellij.vcsUtil.VcsUtil;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
+import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
@@ -34,31 +35,13 @@ import java.io.FileNotFoundException;
 public class QANoteDetails {
 // ------------------------------ FIELDS ------------------------------
 
+    private JButton cancelButton;
+
     private JTextArea description;
 
     private JTextField file;
 
     private JButton jumpToSourceButton;
-
-    private JTextField recipient;
-
-    private JTextField reporter;
-
-    private JTextField revision;
-
-    private JPanel rootComponent;
-
-    private JRadioButton suggestionRadioButton;
-
-    private JTextField temporaryId;
-
-    private JTextField ticket;
-
-    private JRadioButton violationRadioButton;
-
-    private JButton saveButton;
-
-    private JButton cancelButton;
 
     private QANote note;
 
@@ -71,9 +54,27 @@ public class QANoteDetails {
         }
     };
 
-    // --------------------------- CONSTRUCTORS ---------------------------
+    private JTextField recipient;
 
-    public QANoteDetails(final QANoteManager noteManager)
+    private JTextField reporter;
+
+    private JTextField revision;
+
+    private JPanel rootComponent;
+
+    private JButton saveButton;
+
+    private JRadioButton suggestionRadioButton;
+
+    private JTextField temporaryId;
+
+    private JTextField ticket;
+
+    private JRadioButton violationRadioButton;
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+    public QANoteDetails(final QANoteManager noteManager, final YoutrackTicketManager ticketManager)
     {
         $$$setupUI$$$();
         noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE, new PropertyChangeListener() {
@@ -137,49 +138,14 @@ public class QANoteDetails {
         });
     }
 
-    private void setNote(QANote note)
-    {
-        if (this.note != null) {
-            this.note.removePropertyChangeListener(notePropertyChangeListener);
-        }
-        this.note = note;
-        if (this.note != null) {
-            this.note.addPropertyChangeListener(notePropertyChangeListener);
-        }
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            public void run()
-            {
-                loadDetails(QANoteDetails.this.note);
-            }
-        });
-    }
-
 // -------------------------- OTHER METHODS --------------------------
 
-    private void loadDetails(QANote note)
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$()
     {
-        temporaryId.setText("");
-        description.setText("");
-        file.setText("");
-        recipient.setText("");
-        reporter.setText("");
-        revision.setText("");
-        suggestionRadioButton.setSelected(false);
-        ticket.setText("");
-        violationRadioButton.setSelected(false);
-        if (note != null) {
-            description.setText(note.getDescription());
-            file.setText(note.getFileName());
-            recipient.setText(note.getRecipient());
-            reporter.setText(note.getReporter());
-            revision.setText(note.getRevision());
-            suggestionRadioButton.setSelected(note instanceof QASuggestion);
-            if (note.getId() != null) {
-                temporaryId.setText(note.getId().toString());
-            }
-            ticket.setText(note.getTicket());
-            violationRadioButton.setSelected(note instanceof QAViolation);
-        }
+        return rootComponent;
     }
 
     /**
@@ -301,11 +267,46 @@ public class QANoteDetails {
         buttonGroup.add(violationRadioButton);
     }
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$()
+    private void loadDetails(QANote note)
     {
-        return rootComponent;
+        temporaryId.setText("");
+        description.setText("");
+        file.setText("");
+        recipient.setText("");
+        reporter.setText("");
+        revision.setText("");
+        suggestionRadioButton.setSelected(false);
+        ticket.setText("");
+        violationRadioButton.setSelected(false);
+        if (note != null) {
+            description.setText(note.getDescription());
+            file.setText(note.getFileName());
+            recipient.setText(note.getRecipient());
+            reporter.setText(note.getReporter());
+            revision.setText(note.getRevision());
+            suggestionRadioButton.setSelected(note instanceof QASuggestion);
+            if (note.getId() != null) {
+                temporaryId.setText(note.getId().toString());
+            }
+            ticket.setText(note.getTicket());
+            violationRadioButton.setSelected(note instanceof QAViolation);
+        }
+    }
+
+    private void setNote(QANote note)
+    {
+        if (this.note != null) {
+            this.note.removePropertyChangeListener(notePropertyChangeListener);
+        }
+        this.note = note;
+        if (this.note != null) {
+            this.note.addPropertyChangeListener(notePropertyChangeListener);
+        }
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            public void run()
+            {
+                loadDetails(QANoteDetails.this.note);
+            }
+        });
     }
 }

@@ -13,6 +13,7 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
+import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 
 import javax.swing.ImageIcon;
@@ -34,11 +35,11 @@ public class QANotesManagementForm {
 
     private static final String QA_NOTES_MANAGEMER_TOOLWINDOW = "QANotes Manager";
 
-    private JButton scanCodeButton;
-
     private JButton applyDefaultsButton;
 
     private JButton closeButton;
+
+    private JButton createTicketsButton;
 
     private JTextField defaultAuthor;
 
@@ -52,7 +53,11 @@ public class QANotesManagementForm {
 
     private JPanel rootComponent;
 
-    // -------------------------- STATIC METHODS --------------------------
+    private JButton scanCodeButton;
+
+    private YoutrackTicketManager ticketManager;
+
+// -------------------------- STATIC METHODS --------------------------
 
     private static ToolWindow getQANotesManagementWindow(Project project)
     {
@@ -87,6 +92,7 @@ public class QANotesManagementForm {
     public QANotesManagementForm(final Project project)
     {
         noteManager = project.getComponent(QANoteManager.class);
+        ticketManager = project.getComponent(YoutrackTicketManager.class);
         $$$setupUI$$$();
 
         scanCodeButton.addActionListener(new ActionListener() {
@@ -138,6 +144,7 @@ public class QANotesManagementForm {
                 }
             }
         });
+        createTicketsButton.setAction(qaNotesList.getCreateTicketsAction());
     }
 
 // --------------------- GETTER / SETTER METHODS ---------------------
@@ -149,10 +156,12 @@ public class QANotesManagementForm {
 
 // -------------------------- OTHER METHODS --------------------------
 
-    private void createUIComponents()
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$()
     {
-        qaNotesList = new QANotesList(noteManager);
-        qaNoteDetails = new QANoteDetails(noteManager);
+        return rootComponent;
     }
 
     /**
@@ -179,6 +188,9 @@ public class QANotesManagementForm {
         scanCodeButton = new JButton();
         scanCodeButton.setText("Scan code");
         toolBar1.add(scanCodeButton);
+        createTicketsButton = new JButton();
+        createTicketsButton.setText("Create tickets");
+        toolBar1.add(createTicketsButton);
         final JLabel label1 = new JLabel();
         label1.setText("Default author");
         toolBar1.add(label1);
@@ -207,11 +219,9 @@ public class QANotesManagementForm {
         label2.setLabelFor(defaultRevision);
     }
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$()
+    private void createUIComponents()
     {
-        return rootComponent;
+        qaNotesList = new QANotesList(noteManager);
+        qaNoteDetails = new QANoteDetails(noteManager, ticketManager);
     }
 }

@@ -220,8 +220,8 @@ public class QANoteScanner {
         boolean changeFound = false;
         while (iterator.hasNext()) {
             final QANote qaNote = toQANote(iterator.next(), false);
-            if (qaNote.getTicket() != null && ObjectUtils.equals(qaNote.getTicket(), note.getTicket()) || StringUtils.isBlank(qaNote.getTicket()) && StringUtils
-                .isBlank(note.getTicket()) && ObjectUtils.equals(qaNote.getId(), note.getId())) {
+            if (qaNote.getTicket() != null && ObjectUtils.equals(qaNote.getTicket(), note.getTicket()) || qaNote.getId() != null && ObjectUtils.equals(
+                qaNote.getId(), note.getId())) {
                 if (!keepNoteId) {
                     note.setId(null);
                 }
