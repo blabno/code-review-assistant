@@ -172,6 +172,12 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
         return api.getIssue(ticketId);
     }
 
+    public void updateTicket(String ticketId, String command) throws IOException
+    {
+        final YoutrackAPI api = getYoutrackAPI();
+        api.command(ticketId, command);
+    }
+
 // -------------------------- INNER CLASSES --------------------------
 
     public static class State {

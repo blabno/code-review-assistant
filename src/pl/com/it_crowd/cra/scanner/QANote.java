@@ -32,7 +32,7 @@ public abstract class QANote {
 
     private String reporter;
 
-    private String revision;
+    private Long revision;
 
     private String ticket;
 
@@ -68,7 +68,7 @@ public abstract class QANote {
         return reporter;
     }
 
-    public String getRevision()
+    public Long getRevision()
     {
         return revision;
     }
@@ -134,7 +134,7 @@ public abstract class QANote {
         propertyChangeSupport.firePropertyChange(REPORTER_PROPERTY, oldValue, reporter);
     }
 
-    public void setRevision(String revision)
+    public void setRevision(Long revision)
     {
         final Object oldValue = this.revision;
         this.revision = revision;

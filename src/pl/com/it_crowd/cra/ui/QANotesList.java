@@ -24,6 +24,7 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,7 +80,12 @@ public class QANotesList {
             if (selectionModel.isSelectedIndex(index)) {
                 final QANote note = noteManager.getQANotes().get(index);
                 if (StringUtils.isBlank(note.getTicket())) {
-                    noteManager.createTicket(note);
+                    try {
+                        noteManager.createTicket(note);
+                    } catch (IOException e) {
+                        System.err.println("Cannot create ticket");
+                        e.printStackTrace();
+                    }
                     createdTicekts++;
                 }
             }

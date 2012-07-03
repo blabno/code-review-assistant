@@ -9,7 +9,8 @@ import com.intellij.uiDesigner.core.Spacer;
 import com.intellij.vcsUtil.VcsUtil;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
-import pl.com.it_crowd.cra.model.YoutrackTicketManager;
+import pl.com.it_crowd.cra.model.SyncToFileException;
+import pl.com.it_crowd.cra.model.SyncToYoutrackException;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
@@ -74,7 +75,7 @@ public class QANoteDetails {
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
-    public QANoteDetails(final QANoteManager noteManager, final YoutrackTicketManager ticketManager)
+    public QANoteDetails(final QANoteManager noteManager)
     {
         $$$setupUI$$$();
         noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE, new PropertyChangeListener() {
@@ -110,6 +111,14 @@ public class QANoteDetails {
         saveButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e)
             {
+                if (!StringUtils.isBlank(revision.getText())) {
+                    try {
+                        note.setRevision(Long.parseLong(revision.getText()));
+                    } catch (NumberFormatException e1) {
+                        Messages.showWarningDialog(e1.getMessage(), "Invalid Revision");
+                        return;
+                    }
+                }
                 if (!StringUtils.isBlank(description.getText())) {
                     note.setDescription(description.getText());
                 }
@@ -122,11 +131,15 @@ public class QANoteDetails {
                 if (!StringUtils.isBlank(reporter.getText())) {
                     note.setReporter(reporter.getText());
                 }
-                if (!StringUtils.isBlank(revision.getText())) {
-                    note.setRevision(revision.getText());
-                }
                 if (!StringUtils.isBlank(ticket.getText())) {
                     note.setTicket(ticket.getText());
+                }
+                try {
+                    noteManager.saveNote(note);
+                } catch (SyncToFileException ex) {
+                    Messages.showWarningDialog(ex.getMessage(), "Problem Saving QANote to File");
+                } catch (SyncToYoutrackException ex) {
+                    Messages.showWarningDialog(ex.getMessage(), "Problem Saving QANote to Youtrack");
                 }
             }
         });
@@ -283,7 +296,9 @@ public class QANoteDetails {
             file.setText(note.getFileName());
             recipient.setText(note.getRecipient());
             reporter.setText(note.getReporter());
-            revision.setText(note.getRevision());
+            if (note.getRevision() != null) {
+                revision.setText(note.getRevision().toString());
+            }
             suggestionRadioButton.setSelected(note instanceof QASuggestion);
             if (note.getId() != null) {
                 temporaryId.setText(note.getId().toString());

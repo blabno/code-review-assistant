@@ -66,7 +66,7 @@ public class QANoteScanner {
 
     private QANoteConverter noteConverter = new QANoteConverter();
 
-    private String revision;
+    private Long revision;
 
     private String rootPath;
 
@@ -129,7 +129,7 @@ public class QANoteScanner {
         this.defaultAuthor = defaultAuthor;
     }
 
-    public void setRevision(String revision)
+    public void setRevision(Long revision)
     {
         this.revision = revision;
     }
@@ -246,7 +246,7 @@ public class QANoteScanner {
         if (StringUtils.isBlank(qaNote.getReporter())) {
             qaNote.setReporter(defaultAuthor);
         }
-        if (StringUtils.isBlank(qaNote.getRevision())) {
+        if (qaNote.getRevision() == null) {
             qaNote.setRevision(revision);
         }
         return qaNote;
@@ -414,7 +414,7 @@ public class QANoteScanner {
         scanner.setDefaultAuthor("bernard");
         scanner.setRootPath(new File(".").getAbsolutePath());
         scanner.setDirectoryToScan(directory);
-        scanner.setRevision("1109");
+        scanner.setRevision(1109L);
         scanner.adjustQANotes();
     }
 }

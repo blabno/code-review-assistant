@@ -17,6 +17,7 @@ import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 
 import javax.swing.ImageIcon;
+import javax.swing.InputVerifier;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -74,7 +75,6 @@ public class QANotesManagementForm {
                 }
             });
             toolWindow.getContentManager().addContent(content);
-//                TODO create icon for QANotes Manager toolwindow
             toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/qa-note-manager-small.png")));
         }
         return toolWindow;
@@ -114,7 +114,8 @@ public class QANotesManagementForm {
             }
         });
         defaultAuthor.setText(noteManager.getDefaultAuthor());
-        defaultRevision.setText(noteManager.getDefaultRevision());
+        final Long revision = noteManager.getDefaultRevision();
+        defaultRevision.setText(revision == null ? "" : revision.toString());
         defaultAuthor.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
             protected void textChanged(DocumentEvent documentEvent)
@@ -126,19 +127,35 @@ public class QANotesManagementForm {
             @Override
             protected void textChanged(DocumentEvent documentEvent)
             {
-                noteManager.setDefaultRevision(defaultRevision.getText());
+                try {
+                    noteManager.setDefaultRevision(Long.parseLong(defaultRevision.getText()));
+                } catch (NumberFormatException ignore) {
+                }
+            }
+        });
+        defaultRevision.setInputVerifier(new InputVerifier() {
+            @Override
+            public boolean verify(JComponent input)
+            {
+                final JTextField textField = (JTextField) input;
+                try {
+                    Long.parseLong(textField.getText());
+                    return true;
+                } catch (NumberFormatException e) {
+                    return false;
+                }
             }
         });
         applyDefaultsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e)
             {
                 final String reporter = noteManager.getDefaultAuthor();
-                final String revision = noteManager.getDefaultRevision();
+                final Long revision = noteManager.getDefaultRevision();
                 for (QANote note : noteManager.getQANotes()) {
                     if (StringUtils.isBlank(note.getReporter())) {
                         note.setReporter(reporter);
                     }
-                    if (StringUtils.isBlank(note.getRevision())) {
+                    if (note.getRevision() == null) {
                         note.setRevision(revision);
                     }
                 }
@@ -222,6 +239,6 @@ public class QANotesManagementForm {
     private void createUIComponents()
     {
         qaNotesList = new QANotesList(noteManager);
-        qaNoteDetails = new QANoteDetails(noteManager, ticketManager);
+        qaNoteDetails = new QANoteDetails(noteManager);
     }
 }

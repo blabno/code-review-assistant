@@ -62,7 +62,7 @@ public class QANoteConverter {
         if (!StringUtils.isBlank(note.getRecipient())) {
             builder.append(" * @recipient: ").append(note.getRecipient()).append("\n");
         }
-        if (!StringUtils.isBlank(note.getRevision())) {
+        if (note.getRevision() != null) {
             builder.append(" * @revision: ").append(note.getRevision()).append("\n");
         }
         return builder.append(" */").toString();
@@ -124,14 +124,17 @@ public class QANoteConverter {
         }
     }
 
-    private String extractRevision(String comment)
+    private Long extractRevision(String comment)
     {
         final Matcher matcher = QANoteScanner.REVISION_TAG_PATTERN.matcher(comment);
         if (matcher.find()) {
-            return matcher.group(1);
-        } else {
-            return null;
+            try {
+                return Long.parseLong(matcher.group(1));
+            } catch (NumberFormatException e) {
+                handleException(e);
+            }
         }
+        return null;
     }
 
     private Long extractRuleId(String comment)
