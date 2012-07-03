@@ -56,8 +56,6 @@ public class QANotesManagementForm {
 
     private JButton scanCodeButton;
 
-    private YoutrackTicketManager ticketManager;
-
 // -------------------------- STATIC METHODS --------------------------
 
     private static ToolWindow getQANotesManagementWindow(Project project)
@@ -66,8 +64,10 @@ public class QANotesManagementForm {
         ToolWindow toolWindow = toolWindowManager.getToolWindow(QA_NOTES_MANAGEMER_TOOLWINDOW);
         if (toolWindow == null) {
             toolWindow = toolWindowManager.registerToolWindow(QA_NOTES_MANAGEMER_TOOLWINDOW, true, ToolWindowAnchor.BOTTOM);
+            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/qa-note-manager-small.png")));
+
             QANotesManagementForm notesManagementForm = new QANotesManagementForm(project);
-            final Content content = ContentFactory.SERVICE.getInstance().createContent(notesManagementForm.$$$getRootComponent$$$(), null, false);
+            Content content = ContentFactory.SERVICE.getInstance().createContent(notesManagementForm.$$$getRootComponent$$$(), "QANotes", false);
             content.setDisposer(new Disposable() {
                 public void dispose()
                 {
@@ -75,7 +75,10 @@ public class QANotesManagementForm {
                 }
             });
             toolWindow.getContentManager().addContent(content);
-            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/qa-note-manager-small.png")));
+
+            TicketsManagementForm ticketsManagementForm = new TicketsManagementForm(YoutrackTicketManager.getInstance(project));
+            content = ContentFactory.SERVICE.getInstance().createContent(ticketsManagementForm.$$$getRootComponent$$$(), "Youtrack Tickets", false);
+            toolWindow.getContentManager().addContent(content);
         }
         return toolWindow;
     }
@@ -92,7 +95,6 @@ public class QANotesManagementForm {
     public QANotesManagementForm(final Project project)
     {
         noteManager = project.getComponent(QANoteManager.class);
-        ticketManager = project.getComponent(YoutrackTicketManager.class);
         $$$setupUI$$$();
 
         scanCodeButton.addActionListener(new ActionListener() {
@@ -162,13 +164,6 @@ public class QANotesManagementForm {
             }
         });
         createTicketsButton.setAction(qaNotesList.getCreateTicketsAction());
-    }
-
-// --------------------- GETTER / SETTER METHODS ---------------------
-
-    public JPanel getRootComponent()
-    {
-        return rootComponent;
     }
 
 // -------------------------- OTHER METHODS --------------------------

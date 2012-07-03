@@ -3,15 +3,22 @@ package pl.com.it_crowd.cra.model;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.components.Storage;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import pl.com.it_crowd.youtrack.api.Filter;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
 import pl.com.it_crowd.youtrack.api.YoutrackAPI;
 
 import javax.xml.bind.JAXBException;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @com.intellij.openapi.components.State(
@@ -23,9 +30,15 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
 
     public static final String COMPONENT_NAME = "YoutrackTicketManager";
 
+    public static final String TICKETS_PROPERTY = "tickets";
+
+    private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
+
     private String password;
 
-    private Map<String, IssueWrapper> tickets = new HashMap<String, IssueWrapper>();
+    private final Project project;
+
+    private final Map<String, IssueWrapper> tickets = new HashMap<String, IssueWrapper>();
 
     private String username;
 
@@ -40,6 +53,13 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
     public static YoutrackTicketManager getInstance(Project project)
     {
         return project.getComponent(YoutrackTicketManager.class);
+    }
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+    public YoutrackTicketManager(Project project)
+    {
+        this.project = project;
     }
 
 // --------------------- GETTER / SETTER METHODS ---------------------
@@ -151,6 +171,11 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
 
 // -------------------------- OTHER METHODS --------------------------
 
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener)
+    {
+        changeSupport.addPropertyChangeListener(propertyName, listener);
+    }
+
     public IssueWrapper createTicket(String summary, String description)
     {
         try {
@@ -158,6 +183,7 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
             final String issueId = api.createIssue(youtrackProjectID, summary, description);
             final IssueWrapper issue = api.getIssue(issueId);
             tickets.put(issue.getId(), issue);
+            changeSupport.firePropertyChange(TICKETS_PROPERTY, null, tickets.values());
             return issue;
         } catch (IOException e) {
             throw new RuntimeException("Cannot create ticket", e);
@@ -166,10 +192,40 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
         }
     }
 
-    public IssueWrapper getTicket(String ticketId) throws IOException, AuthenticationException, JAXBException
+    public void fetchTickets(final Filter filter)
     {
-        final YoutrackAPI api = getYoutrackAPI();
-        return api.getIssue(ticketId);
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Fetching tickets from Youtrack") {
+            public void run(@NotNull ProgressIndicator progressIndicator)
+            {
+                final YoutrackAPI api = getYoutrackAPI();
+                final List<IssueWrapper> list;
+                try {
+                    list = api.searchIssuesByProject(youtrackProjectID, filter);
+                } catch (Exception e) {
+                    throw new RuntimeException("Problems fetching tickets from Youtrack", e);
+                }
+                if (progressIndicator.isCanceled()) {
+                    return;
+                }
+                synchronized (tickets) {
+                    tickets.clear();
+                    for (IssueWrapper ticket : list) {
+                        tickets.put(ticket.getId(), ticket);
+                    }
+                    changeSupport.firePropertyChange(TICKETS_PROPERTY, null, tickets.values());
+                }
+            }
+        });
+    }
+
+    public Collection<IssueWrapper> getTickets()
+    {
+        return tickets.values();
+    }
+
+    public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener)
+    {
+        changeSupport.removePropertyChangeListener(propertyName, listener);
     }
 
     public void updateTicket(String ticketId, String command) throws IOException
