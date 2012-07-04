@@ -1,5 +1,6 @@
 package pl.com.it_crowd.cra.scanner.test;
 
+import org.apache.commons.collections.comparators.NullComparator;
 import org.junit.Assert;
 import org.junit.Test;
 import pl.com.it_crowd.cra.scanner.QANoteConverter;
@@ -29,8 +30,14 @@ public class QANotesTest {
         + "            .setParameter(\"now\", new Date())\n" + "            .setParameter(\"projectKey\", projectKey)\n" + "            .getResultList();\n"
         + "    }\n" + "}";
 
-
 // -------------------------- OTHER METHODS --------------------------
+
+    @Test
+    public void extractAssignee()
+    {
+        String comment = "/**\n" + " * QA-SUGGESTION\n" + " * unused method\n" + " * @reporter: bernard\n" + " * @assignee: k.miksa\n" + " */";
+        Assert.assertEquals("k.miksa", new QANoteConverter().getAsObject(comment).getAssignee());
+    }
 
     @Test
     public void extractAuthor()
@@ -42,22 +49,19 @@ public class QANotesTest {
     @Test
     public void extractDescription()
     {
-        String comment = "/**\n" + " * QA-SUGGESTION\n" + " * unused method\n" + " * @reporter: bernard\n" + " */";
+        String comment = "/**\n" + " * QA-SUGGESTION\n" + " * unused method\n" + " * @reporter: bernard\n" + " * @assignee: k.miksa\n" + " */";
         Assert.assertEquals("unused method", new QANoteConverter().getAsObject(comment).getDescription());
-    }
-
-    @Test
-    public void extractRecipient()
-    {
-        String comment = "/**\n" + " * QA-SUGGESTION\n" + " * unused method\n" + " * @reporter: bernard\n" + " * @recipient: jack\n" + " */";
-        Assert.assertEquals("jack", new QANoteConverter().getAsObject(comment).getRecipient());
+        comment = "/**\n" + " * QA-VIOLATION\n" + " * Assign method result to a variable instead of invoking the method over and over\n" + " * @noteId: 1\n"
+            + " * @reporter: bernard\n" + " * @ticket: TEST_QA-26\n" + " * @assignee: k.miksa\n" + " * @revision: 1223\n" + " */";
+        Assert.assertEquals("Assign method result to a variable instead of invoking the method over and over",
+            new QANoteConverter().getAsObject(comment).getDescription());
     }
 
     @Test
     public void extractRevision()
     {
         String comment = "/**\n" + " * QA-SUGGESTION\n" + " * unused method\n" + " * @reporter: bernard\n" + " * @revision: 32\n" + " */";
-        Assert.assertEquals("32", new QANoteConverter().getAsObject(comment).getRevision());
+        Assert.assertEquals(new Long(32), new QANoteConverter().getAsObject(comment).getRevision());
     }
 
     @Test
@@ -143,6 +147,16 @@ public class QANotesTest {
         Assert.assertEquals(comment, newComment);
         newComment = new QANoteConverter().getAsString(new QANoteScanner().toQANote(newComment, false));
         Assert.assertEquals(comment, newComment);
+    }
+
+    @Test
+    public void rubish()
+    {
+        System.out.println(new NullComparator().compare(null, null));
+        System.out.println(new NullComparator().compare(null, 1));
+        System.out.println(new NullComparator().compare(2, 1));
+        System.out.println(new NullComparator().compare(1, 1));
+        System.out.println(new NullComparator().compare(2, null));
     }
 
     @Test

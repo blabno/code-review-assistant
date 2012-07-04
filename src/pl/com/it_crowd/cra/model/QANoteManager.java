@@ -7,9 +7,11 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import org.apache.commons.collections.comparators.NullComparator;
 import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pl.com.it_crowd.cra.QANotifications;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QANoteScanner;
 import pl.com.it_crowd.cra.youtrack.QACommand;
@@ -22,7 +24,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 //TODO would be great to first save all edited files to disk and then run the scanner
@@ -34,6 +38,8 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 // ------------------------------ FIELDS ------------------------------
 
     public static final String COMPONENT_NAME = "QANoteManager";
+
+    public static final String HIGHLIGHTED_NOTE = "highlightedNote";
 
     public static final String QA_NOTES_PROPERTY = "qaNotes";
 
@@ -54,6 +60,13 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     private QANote selectedNote;
 
     private final List<QANote> unmodifiableQANotes;
+
+// -------------------------- STATIC METHODS --------------------------
+
+    public static QANoteManager getInstance(Project project)
+    {
+        return project.getComponent(QANoteManager.class);
+    }
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
@@ -191,36 +204,57 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 //TODO synchronize all opened files with disk
     }
 
-    public void createTicket(final QANote note) throws IOException
+    public void createTickets(final Collection<QANote> notes)
     {
-        if (!StringUtils.isBlank(note.getTicket())) {
-            throw new IllegalArgumentException("QANote already has ticket assigned: " + note.getTicket());
+        for (QANote note : notes) {
+            if (!StringUtils.isBlank(note.getTicket())) {
+                throw new IllegalArgumentException("One of QANotes already has ticket assigned: " + note.getTicket());
+            }
         }
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack tickets") {
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
                 final YoutrackTicketManager ticketManager = YoutrackTicketManager.getInstance(project);
-                final IssueWrapper ticket = ticketManager.createTicket(note.getDescription(), note.getFileName());
-                note.setTicket(ticket.getId());
-            }
+                final List<QANote> qaNoteList = new ArrayList<QANote>(notes);
+                Collections.sort(qaNoteList, new Comparator<QANote>() {
+                    private NullComparator nullComparator = new NullComparator();
 
-            @Override
-            public void onCancel()
-            {
-                try {
-                    updateTicket(note);
-                } catch (IOException e) {
-                    throw new RuntimeException("Problem updating ticket", e);
+                    public int compare(QANote o1, QANote o2)
+                    {
+                        final int result = nullComparator.compare(o1.getId(), o2.getId());
+                        if (result != 0) {
+                            return result;
+                        } else {
+                            return nullComparator.compare(o1.getFileName(), o2.getFileName());
+                        }
+                    }
+                });
+                for (int i = 0, qaNoteListSize = qaNoteList.size(); i < qaNoteListSize; i++) {
+                    QANote note = qaNoteList.get(i);
+                    if (progressIndicator.isCanceled()) {
+                        break;
+                    }
+                    progressIndicator.setFraction(i / (double) notes.size());
+                    progressIndicator.setText(note.getFileName());
+                    progressIndicator.setText2(String.format("%d. %s", note.getId(), note.getDescription()));
+                    final IssueWrapper ticket = ticketManager.createTicket(note.getDescription(), note.getFileName());
+                    note.setTicket(ticket.getId());
+                    save(note);
                 }
             }
 
-            @Override
-            public void onSuccess()
+            private void save(QANote note)
             {
                 try {
+                    syncToFile(note);
+                } catch (Exception e) {
+                    QANotifications.handle(e, "Problem saving note in file", note, project);
+                    return;
+                }
+                try {
                     updateTicket(note);
-                } catch (IOException e) {
-                    throw new RuntimeException("Problem updating ticket", e);
+                } catch (Exception e) {
+                    QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
                 }
             }
         });
@@ -246,24 +280,16 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
         return qaNotes;
     }
 
+    public void highlightSelectedNote()
+    {
+        changeSupport.firePropertyChange(HIGHLIGHTED_NOTE, null, getSelectedNote());
+    }
+
     public void saveNote(QANote note)
     {
-        try {
-//TODO problems should be logged differently
-            if (!scanner.syncToFile(note, true)) {
-                throw new SyncToFileException(String.format("QANote %s not found in file %s", note.toString(), note.getFileName()));
-            }
-        } catch (FileNotFoundException e) {
-            throw new SyncToFileException(String.format("File %s not found for note %s", note.getFileName(), note.toString()), e);
-        } catch (IOException e) {
-            throw new SyncToFileException(String.format("Problem saving note %s to file %s", note.toString(), note.getFileName()), e);
-        }
+        syncToFile(note);
         if (!StringUtils.isBlank(note.getTicket())) {
-            try {
-                updateTicket(note);
-            } catch (IOException e) {
-                throw new SyncToYoutrackException(String.format("Problem updating Youtrack ticket for note %s", note.toString()), e);
-            }
+            updateTicketAsynchronously(note);
         }
     }
 
@@ -272,32 +298,6 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
         final QANote oldValue = this.selectedNote;
         this.selectedNote = note;
         changeSupport.firePropertyChange(SELECTED_NOTE, oldValue, note);
-    }
-
-    public void updateTicket(final QANote note) throws IOException
-    {
-        if (StringUtils.isBlank(note.getTicket())) {
-            throw new IllegalArgumentException("QANote must have ticket specified");
-        }
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
-            public void run(@NotNull ProgressIndicator progressIndicator)
-            {
-                final YoutrackTicketManager ticketManager = YoutrackTicketManager.getInstance(project);
-                final QACommand command = QACommand.qaNoteTypeCommand(QANoteTypeValues.valueOf(note));
-                if (!StringUtils.isBlank(note.getRecipient())) {
-                    command.assignee(note.getRecipient());
-                }
-                if (note.getRevision() != null) {
-                    command.revision(note.getRevision());
-                }
-                try {
-                    //TODO set rule
-                    ticketManager.updateTicket(note.getTicket(), command.toString());
-                } catch (IOException e) {
-                    throw new RuntimeException("Problems updating Youtrack ticket", e);
-                }
-            }
-        });
     }
 
     /**
@@ -335,6 +335,56 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
         synchronized (qaNotes) {
             qaNotes.clear();
         }
+    }
+
+    private void syncToFile(QANote note)
+    {
+        try {
+//TODO problems should be logged differently
+            if (!scanner.syncToFile(note, true)) {
+                throw new SyncToFileException(String.format("QANote %s not found in file %s", note.toString(), note.getFileName()));
+            }
+        } catch (FileNotFoundException e) {
+            throw new SyncToFileException(String.format("File %s not found for note %s", note.getFileName(), note.toString()), e);
+        } catch (IOException e) {
+            throw new SyncToFileException(String.format("Problem saving note %s to file %s", note.toString(), note.getFileName()), e);
+        }
+    }
+
+    private void updateTicket(final QANote note) throws IOException
+    {
+        if (StringUtils.isBlank(note.getTicket())) {
+            throw new IllegalArgumentException("QANote must have ticket specified");
+        }
+
+        final YoutrackTicketManager ticketManager = YoutrackTicketManager.getInstance(project);
+        final QACommand command = QACommand.qaNoteTypeCommand(QANoteTypeValues.valueOf(note));
+        if (!StringUtils.isBlank(note.getAssignee())) {
+            command.assignee(note.getAssignee());
+        }
+        if (note.getRevision() != null) {
+            command.revision(note.getRevision());
+        }
+        try {
+            //TODO set rule
+            ticketManager.updateTicket(note.getTicket(), command.toString());
+        } catch (IOException e) {
+            throw new RuntimeException("Problems updating Youtrack ticket", e);
+        }
+    }
+
+    private void updateTicketAsynchronously(final QANote note)
+    {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
+            public void run(@NotNull ProgressIndicator progressIndicator)
+            {
+                try {
+                    updateTicket(note);
+                } catch (IOException e) {
+                    throw new SyncToYoutrackException(String.format("Problem updating Youtrack ticket for note %s", note.toString()), e);
+                }
+            }
+        });
     }
 
 // -------------------------- INNER CLASSES --------------------------

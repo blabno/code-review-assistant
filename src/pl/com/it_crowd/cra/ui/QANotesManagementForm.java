@@ -2,7 +2,6 @@ package pl.com.it_crowd.cra.ui;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -47,6 +46,8 @@ public class QANotesManagementForm {
     private JTextField defaultRevision;
 
     private final QANoteManager noteManager;
+
+    private Project project;
 
     private QANoteDetails qaNoteDetails;
 
@@ -94,6 +95,7 @@ public class QANotesManagementForm {
 
     public QANotesManagementForm(final Project project)
     {
+        this.project = project;
         noteManager = project.getComponent(QANoteManager.class);
         $$$setupUI$$$();
 
@@ -111,7 +113,7 @@ public class QANotesManagementForm {
                 try {
                     noteManager.finish();
                 } catch (IOException ex) {
-                    Messages.showWarningDialog(ex.getMessage(), "Problem Finishing QANote Management");
+                    throw new RuntimeException("Problem finishing QANote management", ex);
                 }
             }
         });
@@ -233,7 +235,7 @@ public class QANotesManagementForm {
 
     private void createUIComponents()
     {
-        qaNotesList = new QANotesList(noteManager);
-        qaNoteDetails = new QANoteDetails(noteManager);
+        qaNotesList = new QANotesList(project);
+        qaNoteDetails = new QANoteDetails(project);
     }
 }

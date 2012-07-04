@@ -4,7 +4,6 @@ import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.Nls;
-import pl.com.it_crowd.cra.ui.CodeReviewAssistantPanel;
 import pl.com.it_crowd.cra.ui.SettingsForm;
 
 import javax.swing.Icon;
@@ -49,7 +48,7 @@ public class CodeReviewProjectConfigurable implements Configurable {
 
     public Icon getIcon()
     {
-        return new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/code-review-small.png"));
+        return new ImageIcon(CodeReviewProjectConfigurable.class.getResource("/icons/code-review-small.png"));
     }
 
     public String getHelpTopic()

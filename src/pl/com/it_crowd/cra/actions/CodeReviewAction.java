@@ -10,6 +10,10 @@ import java.awt.Dimension;
 import java.awt.Toolkit;
 
 public class CodeReviewAction extends AnAction {
+// ------------------------------ FIELDS ------------------------------
+
+    public static String ACTION_ID = "CodeReview";
+
 // -------------------------- OTHER METHODS --------------------------
 
     @Override
@@ -30,6 +34,6 @@ public class CodeReviewAction extends AnAction {
     {
         final Project project = e.getProject();
         final boolean visible = project != null && SvnVcs.getInstance(project) != null;
-        e.getPresentation().setVisible(visible);
+        e.getPresentation().setEnabledAndVisible(visible);
     }
 }

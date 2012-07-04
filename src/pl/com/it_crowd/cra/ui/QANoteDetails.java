@@ -2,6 +2,7 @@ package pl.com.it_crowd.cra.ui;
 
 import com.intellij.ide.actions.OpenFileAction;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
@@ -10,7 +11,6 @@ import com.intellij.vcsUtil.VcsUtil;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
 import pl.com.it_crowd.cra.model.SyncToFileException;
-import pl.com.it_crowd.cra.model.SyncToYoutrackException;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
@@ -36,6 +36,8 @@ import java.io.FileNotFoundException;
 public class QANoteDetails {
 // ------------------------------ FIELDS ------------------------------
 
+    private JTextField assignee;
+
     private JButton cancelButton;
 
     private JTextArea description;
@@ -50,12 +52,15 @@ public class QANoteDetails {
         public void propertyChange(PropertyChangeEvent evt)
         {
             if (note.equals(evt.getSource())) {
-                loadDetails(note);
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    public void run()
+                    {
+                        loadDetails(note);
+                    }
+                });
             }
         }
     };
-
-    private JTextField recipient;
 
     private JTextField reporter;
 
@@ -75,8 +80,9 @@ public class QANoteDetails {
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
-    public QANoteDetails(final QANoteManager noteManager)
+    public QANoteDetails(Project project)
     {
+        final QANoteManager noteManager = QANoteManager.getInstance(project);
         $$$setupUI$$$();
         noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE, new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent evt)
@@ -125,8 +131,8 @@ public class QANoteDetails {
                 if (!StringUtils.isBlank(file.getText())) {
                     note.setFileName(file.getText());
                 }
-                if (!StringUtils.isBlank(recipient.getText())) {
-                    note.setRecipient(recipient.getText());
+                if (!StringUtils.isBlank(assignee.getText())) {
+                    note.setAssignee(assignee.getText());
                 }
                 if (!StringUtils.isBlank(reporter.getText())) {
                     note.setReporter(reporter.getText());
@@ -138,8 +144,6 @@ public class QANoteDetails {
                     noteManager.saveNote(note);
                 } catch (SyncToFileException ex) {
                     Messages.showWarningDialog(ex.getMessage(), "Problem Saving QANote to File");
-                } catch (SyncToYoutrackException ex) {
-                    Messages.showWarningDialog(ex.getMessage(), "Problem Saving QANote to Youtrack");
                 }
             }
         });
@@ -194,11 +198,11 @@ public class QANoteDetails {
         rootComponent.add(label2, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
             GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JLabel label3 = new JLabel();
-        label3.setText("Recipient");
+        label3.setText("Assignee");
         rootComponent.add(label3, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
             GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        recipient = new JTextField();
-        rootComponent.add(recipient,
+        assignee = new JTextField();
+        rootComponent.add(assignee,
             new GridConstraints(3, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
                 GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label4 = new JLabel();
@@ -269,7 +273,7 @@ public class QANoteDetails {
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         label1.setLabelFor(reporter);
         label2.setLabelFor(file);
-        label3.setLabelFor(recipient);
+        label3.setLabelFor(assignee);
         label4.setLabelFor(revision);
         label5.setLabelFor(ticket);
         label7.setLabelFor(description);
@@ -285,7 +289,7 @@ public class QANoteDetails {
         temporaryId.setText("");
         description.setText("");
         file.setText("");
-        recipient.setText("");
+        assignee.setText("");
         reporter.setText("");
         revision.setText("");
         suggestionRadioButton.setSelected(false);
@@ -294,7 +298,7 @@ public class QANoteDetails {
         if (note != null) {
             description.setText(note.getDescription());
             file.setText(note.getFileName());
-            recipient.setText(note.getRecipient());
+            assignee.setText(note.getAssignee());
             reporter.setText(note.getReporter());
             if (note.getRevision() != null) {
                 revision.setText(note.getRevision().toString());

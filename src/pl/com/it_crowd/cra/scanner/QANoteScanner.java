@@ -22,9 +22,13 @@ import java.util.regex.Pattern;
 public class QANoteScanner {
 // ------------------------------ FIELDS ------------------------------
 
+    static final Pattern ASSIGNEE_TAG_PATTERN;
+
+    static String ASSIGNEE_TAG_PATTERN_STRING = "@assignee\\s*:\\s*((\\w|\\.)+)\\s*";
+
     static final Pattern AUTHOR_TAG_PATTERN;
 
-    static final String AUTHOR_TAG_PATTERN_STRING = "@reporter\\s*:\\s*(\\w+)\\s*";
+    static final String AUTHOR_TAG_PATTERN_STRING = "@reporter\\s*:\\s*((\\w|\\.)+)\\s*";
 
     static final Pattern NOTE_ID_TAG_PATTERN;
 
@@ -35,10 +39,6 @@ public class QANoteScanner {
     private static final String QA_COMMENT_PATTERN_STRING;
 
     static final String QA_TAGS = "QA-VIOLATION|QA-SUGGESTION|QA-REVIEW";
-
-    static final Pattern RECIPIENT_TAG_PATTERN;
-
-    static String RECIPIENT_TAG_PATTERN_STRING = "@recipient\\s*:\\s*(\\w+)\\s*";
 
     static final Pattern REVISION_TAG_PATTERN;
 
@@ -83,7 +83,7 @@ public class QANoteScanner {
         QA_COMMENT_PATTERN_STRING = "/\\*+([^*]|[\\r\\n]|(\\*+([^*/]|[\\r\\n])))*\\*+/|(//.*)";
         AUTHOR_TAG_PATTERN = Pattern.compile(AUTHOR_TAG_PATTERN_STRING);
         NOTE_ID_TAG_PATTERN = Pattern.compile(NOTE_ID_TAG_PATTERN_STRING);
-        RECIPIENT_TAG_PATTERN = Pattern.compile(RECIPIENT_TAG_PATTERN_STRING);
+        ASSIGNEE_TAG_PATTERN = Pattern.compile(ASSIGNEE_TAG_PATTERN_STRING);
         REVISION_TAG_PATTERN = Pattern.compile(REVISION_TAG_PATTERN_STRING);
         RULE_ID_TAG_PATTERN = Pattern.compile(RULE_ID_TAG_PATTERN_STRING);
         QA_COMMENT_PATTERN = Pattern.compile(QA_COMMENT_PATTERN_STRING);
@@ -397,24 +397,5 @@ public class QANoteScanner {
 
             private int start;
         }
-    }
-
-// --------------------------- main() method ---------------------------
-
-    public static void main(String[] args)
-    {
-        if (args.length == 0) {
-            System.err.println("USAGE: java QANoteScanner directoryToScan");
-            System.exit(1);
-        }
-        final File directory = new File(args[0]);
-        System.out.println(directory.getAbsolutePath());
-
-        final QANoteScanner scanner = new QANoteScanner();
-        scanner.setDefaultAuthor("bernard");
-        scanner.setRootPath(new File(".").getAbsolutePath());
-        scanner.setDirectoryToScan(directory);
-        scanner.setRevision(1109L);
-        scanner.adjustQANotes();
     }
 }

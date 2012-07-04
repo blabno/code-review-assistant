@@ -1,7 +1,6 @@
 package pl.com.it_crowd.cra.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import pl.com.it_crowd.cra.model.YoutrackTicketManager;
@@ -64,11 +63,7 @@ public class TicketsManagementForm {
         getTicketsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e)
             {
-                try {
-                    TicketsManagementForm.this.ticketManager.fetchTickets(Filter.stateFilter(StateValues.Unresolved));
-                } catch (Exception ex) {
-                    Messages.showWarningDialog(ex.getMessage(), "Problem Fetching Ticket From Youtrack");
-                }
+                TicketsManagementForm.this.ticketManager.fetchTickets(Filter.stateFilter(StateValues.Unresolved));
             }
         });
     }

@@ -1,11 +1,14 @@
 package pl.com.it_crowd.cra.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import org.apache.commons.lang.StringUtils;
+import pl.com.it_crowd.cra.QANotifications;
 import pl.com.it_crowd.cra.model.QANoteManager;
+import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 
 import javax.swing.AbstractAction;
@@ -24,7 +27,6 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,16 +42,47 @@ public class QANotesList {
 
     private QANoteManager noteManager;
 
+    private Project project;
+
     private JPanel rootComponent;
 
     private JTable table;
 
+    private YoutrackTicketManager ticketManager;
+
 // --------------------------- CONSTRUCTORS ---------------------------
 
-    public QANotesList(QANoteManager noteManager)
+    public QANotesList(final Project project)
     {
-        this.noteManager = noteManager;
+        this.project = project;
+        this.noteManager = QANoteManager.getInstance(project);
+        this.ticketManager = YoutrackTicketManager.getInstance(project);
         $$$setupUI$$$();
+        noteManager.addPropertyChangeListener(QANoteManager.HIGHLIGHTED_NOTE, new PropertyChangeListener() {
+            public void propertyChange(final PropertyChangeEvent evt)
+            {
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    public void run()
+                    {
+                        table.getSelectionModel().clearSelection();
+                        if (evt.getNewValue() != null) {
+                            QANotesManagementForm.show(project);
+                            final List<QANote> qaNotes = noteManager.getQANotes();
+                            for (int i = 0, qaNotesSize = qaNotes.size(); i < qaNotesSize; i++) {
+                                QANote note = qaNotes.get(i);
+                                if (evt.getNewValue().equals(note)) {
+                                    table.getSelectionModel().setSelectionInterval(i, i);
+                                    table.requestFocusInWindow();
+//TODO scroll to selected row
+                                    return;
+                                }
+                            }
+                            QANotifications.inform("Cannot find selected QANote among available notes!", evt.getNewValue().toString(), project);
+                        }
+                    }
+                });
+            }
+        });
     }
 
 // --------------------- GETTER / SETTER METHODS ---------------------
@@ -61,48 +94,43 @@ public class QANotesList {
 
 // -------------------------- OTHER METHODS --------------------------
 
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$()
+    {
+        return rootComponent;
+    }
+
     public void createTickets()
     {
         final ListSelectionModel selectionModel = table.getSelectionModel();
         if (selectionModel.isSelectionEmpty()) {
             return;
         }
-        int createdTicekts = 0;
+        final ArrayList<QANote> notesToTicketize = new ArrayList<QANote>();
+        final List<QANote> skippedNotes = new ArrayList<QANote>();
+        final String username = ticketManager.getUsername();
+        if (StringUtils.isBlank(username)) {
+            Messages.showWarningDialog("Youtrack ticket manager is not configured, please configure it first.", "Create Tickets");
+            return;
+        }
         for (int index = selectionModel.getMinSelectionIndex(); index <= selectionModel.getMaxSelectionIndex(); index++) {
             if (selectionModel.isSelectedIndex(index)) {
                 final QANote note = noteManager.getQANotes().get(index);
-                if (StringUtils.isBlank(note.getTicket())) {
-                    try {
-                        noteManager.createTicket(note);
-                    } catch (IOException e) {
-                        System.err.println("Cannot create ticket");
-                        e.printStackTrace();
-                    }
-                    createdTicekts++;
+                if (StringUtils.isBlank(note.getTicket()) && username.equals(note.getReporter())) {
+                    notesToTicketize.add(note);
+                } else {
+                    skippedNotes.add(note);
                 }
             }
         }
-        Messages.showInfoMessage(String.format("Created %d tickets", createdTicekts), "Create Tickets");
-    }
-
-    private void createUIComponents()
-    {
-        table = new JTable(new QANoteTablModel());
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            public void valueChanged(ListSelectionEvent e)
-            {
-                if (e.getValueIsAdjusting()) {
-                    return;
-                }
-                final ListSelectionModel selectionModel = table.getSelectionModel();
-                final int index = selectionModel.getAnchorSelectionIndex();
-                if (selectionModel.isSelectionEmpty() || !selectionModel.isSelectedIndex(index)) {
-                    noteManager.selectNote(null);
-                } else {
-                    noteManager.selectNote(noteManager.getQANotes().get(index));
-                }
-            }
-        });
+        noteManager.createTickets(notesToTicketize);
+        if (!skippedNotes.isEmpty()) {
+            final String message = String.format("%d notes were skipped because they have ticket assigned already or are reported by different user then %s",
+                skippedNotes.size(), username);
+            QANotifications.inform("Some notes were skipped", message, project);
+        }
     }
 
     /**
@@ -124,12 +152,24 @@ public class QANotesList {
         scrollPane1.setViewportView(table);
     }
 
-    /**
-     * @noinspection ALL
-     */
-    public JComponent $$$getRootComponent$$$()
+    private void createUIComponents()
     {
-        return rootComponent;
+        table = new JTable(new QANoteTablModel());
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            public void valueChanged(ListSelectionEvent e)
+            {
+                if (e.getValueIsAdjusting()) {
+                    return;
+                }
+                final ListSelectionModel selectionModel = table.getSelectionModel();
+                final int index = selectionModel.getAnchorSelectionIndex();
+                if (selectionModel.isSelectionEmpty() || !selectionModel.isSelectedIndex(index)) {
+                    noteManager.selectNote(null);
+                } else {
+                    noteManager.selectNote(noteManager.getQANotes().get(index));
+                }
+            }
+        });
     }
 
 // -------------------------- INNER CLASSES --------------------------
