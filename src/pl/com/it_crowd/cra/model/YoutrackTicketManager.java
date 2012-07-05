@@ -7,6 +7,7 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import pl.com.it_crowd.youtrack.api.Filter;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
@@ -16,6 +17,8 @@ import javax.xml.bind.JAXBException;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -89,6 +92,15 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
     private YoutrackAPI getYoutrackAPI()
     {
         if (youtrackAPI == null) {
+            if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
+                throw new IllegalStateException("Configure Youtrack username and password");
+            }
+            try {
+                //Result is ignored, it's just for validating the youtrackServiceLocation
+                new URL(youtrackServiceLocation);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException("Invalid Youtrack service location: " + youtrackServiceLocation, e);
+            }
             try {
                 youtrackAPI = new YoutrackAPI(youtrackServiceLocation, username, password);
             } catch (Exception e) {
