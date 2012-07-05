@@ -26,6 +26,12 @@
               <text value=""/>
             </properties>
           </component>
+          <component id="1e252" class="javax.swing.JButton" binding="filtersButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <text value="Filters"/>
+            </properties>
+          </component>
           <component id="878bf" class="javax.swing.JButton" binding="scanCodeButton">
             <constraints/>
             <properties>

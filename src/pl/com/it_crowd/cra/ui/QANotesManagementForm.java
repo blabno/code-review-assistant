@@ -18,9 +18,11 @@ import pl.com.it_crowd.cra.scanner.QANote;
 import javax.swing.ImageIcon;
 import javax.swing.InputVerifier;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.event.DocumentEvent;
@@ -28,6 +30,10 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 public class QANotesManagementForm {
@@ -44,6 +50,8 @@ public class QANotesManagementForm {
     private JTextField defaultAuthor;
 
     private JTextField defaultRevision;
+
+    private JButton filtersButton;
 
     private final QANoteManager noteManager;
 
@@ -166,6 +174,47 @@ public class QANotesManagementForm {
             }
         });
         createTicketsButton.setAction(qaNotesList.getCreateTicketsAction());
+
+        final JPopupMenu filtersPopupMenu = new JPopupMenu("Filters");
+        final JCheckBoxMenuItem noTicketMenuItem = new JCheckBoxMenuItem("No ticket");
+        final JCheckBoxMenuItem invalidAssigneeMenuItem = new JCheckBoxMenuItem("Invalid assignee");
+        final JCheckBoxMenuItem emptyRevisonMenuItem = new JCheckBoxMenuItem("Empty revision");
+        final JCheckBoxMenuItem emptyReporterMenuItem = new JCheckBoxMenuItem("Empty reporter");
+        final JCheckBoxMenuItem emptyDescriptionMenuItem = new JCheckBoxMenuItem("Empty description");
+        filtersPopupMenu.add(noTicketMenuItem);
+        filtersPopupMenu.add(invalidAssigneeMenuItem);
+        filtersPopupMenu.add(emptyDescriptionMenuItem);
+        filtersPopupMenu.add(emptyReporterMenuItem);
+        filtersPopupMenu.add(emptyRevisonMenuItem);
+        final ItemListener itemListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e)
+            {
+                if (noTicketMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterNoTicketNotes(ItemEvent.SELECTED == e.getStateChange());
+                } else if (invalidAssigneeMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterInvalidAssigneeNotes(ItemEvent.SELECTED == e.getStateChange());
+                } else if (emptyRevisonMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterEmptyRevisionNotes(ItemEvent.SELECTED == e.getStateChange());
+                } else if (emptyReporterMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterEmptyReporterNotes(ItemEvent.SELECTED == e.getStateChange());
+                } else if (emptyDescriptionMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterEmptyDescriptionNotes(ItemEvent.SELECTED == e.getStateChange());
+                }
+            }
+        };
+        noTicketMenuItem.addItemListener(itemListener);
+        invalidAssigneeMenuItem.addItemListener(itemListener);
+        emptyDescriptionMenuItem.addItemListener(itemListener);
+        emptyReporterMenuItem.addItemListener(itemListener);
+        emptyRevisonMenuItem.addItemListener(itemListener);
+
+        filtersButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                filtersPopupMenu.show(e.getComponent(), e.getX(), e.getY());
+            }
+        });
     }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -199,6 +248,9 @@ public class QANotesManagementForm {
         closeButton.setIcon(new ImageIcon(getClass().getResource("/actions/cancel.png")));
         closeButton.setText("");
         toolBar1.add(closeButton);
+        filtersButton = new JButton();
+        filtersButton.setText("Filters");
+        toolBar1.add(filtersButton);
         scanCodeButton = new JButton();
         scanCodeButton.setText("Scan code");
         toolBar1.add(scanCodeButton);

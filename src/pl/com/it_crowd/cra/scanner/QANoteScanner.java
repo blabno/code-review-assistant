@@ -1,7 +1,6 @@
 package pl.com.it_crowd.cra.scanner;
 
 import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -51,8 +50,6 @@ public class QANoteScanner {
     static final Pattern TICKET_TAG_PATTERN;
 
     static final String TICKET_TAG_PATTERN_STRING = "@ticket\\s*:\\s*((\\w|-)+)\\s*";
-
-    private String defaultAuthor;
 
     private File directoryToScan;
 
@@ -122,11 +119,6 @@ public class QANoteScanner {
     public void setRootPath(String rootPath)
     {
         this.rootPath = rootPath;
-    }
-
-    public void setDefaultAuthor(String defaultAuthor)
-    {
-        this.defaultAuthor = defaultAuthor;
     }
 
     public void setRevision(Long revision)
@@ -242,9 +234,6 @@ public class QANoteScanner {
         final QANote qaNote = noteConverter.getAsObject(comment);
         if (generateId) {
             qaNote.setId(generateQANoteTemporaryId());
-        }
-        if (StringUtils.isBlank(qaNote.getReporter())) {
-            qaNote.setReporter(defaultAuthor);
         }
         if (qaNote.getRevision() == null) {
             qaNote.setRevision(revision);

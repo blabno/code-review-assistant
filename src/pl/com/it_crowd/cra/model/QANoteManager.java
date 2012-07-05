@@ -177,7 +177,6 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
          * In order to reset noteId sequence generator and not expose such method out we create new instance of scanner
          */
         scanner = new QANoteScanner();
-        scanner.setDefaultAuthor(getDefaultAuthor());
         scanner.setRootPath(project.getBasePath());
 //TODO save all opened files to disk before adjusting
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Adjusting QA notes code") {
@@ -380,8 +379,8 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
             {
                 try {
                     updateTicket(note);
-                } catch (IOException e) {
-                    throw new SyncToYoutrackException(String.format("Problem updating Youtrack ticket for note %s", note.toString()), e);
+                } catch (Exception e) {
+                    QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
                 }
             }
         });

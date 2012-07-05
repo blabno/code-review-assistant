@@ -10,6 +10,7 @@ import pl.com.it_crowd.cra.QANotifications;
 import pl.com.it_crowd.cra.model.QANoteManager;
 import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
+import pl.com.it_crowd.youtrack.api.rest.User;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -18,20 +19,38 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.RowFilter;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
+import javax.xml.bind.JAXBException;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class QANotesList {
 // ------------------------------ FIELDS ------------------------------
+
+    public static final String FILTER_EMPTY_DESCRIPTION_NOTES_PROPERTY = "filterEmptyDscriptionNotes";
+
+    public static final String FILTER_EMPTY_REPORTER_NOTES_PROPERTY = "filterEmptyReporterNotes";
+
+    public static final String FILTER_EMPTY_REVISION_NOTES_PROPERTY = "filterEmptyRevisionNotes";
+
+    public static final String FILTER_INVALID_ASSIGNEE_NOTES_PROPERTY = "filterInvalidAssigneeNotes";
+
+    public static final String FILTER_NO_TICKET_NOTES_PROPERTY = "filterNoTicketotes";
+
+    private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
 
     private Action createTicketsAction = new AbstractAction("Create tickets") {
         public void actionPerformed(ActionEvent e)
@@ -39,6 +58,16 @@ public class QANotesList {
             createTickets();
         }
     };
+
+    private boolean filterEmptyDescriptionNotes;
+
+    private boolean filterEmptyReporterNotes;
+
+    private boolean filterEmptyRevisionNotes;
+
+    private boolean filterInvalidAssigneeNotes;
+
+    private boolean filterNoTicketNotes;
 
     private QANoteManager noteManager;
 
@@ -49,6 +78,8 @@ public class QANotesList {
     private JTable table;
 
     private YoutrackTicketManager ticketManager;
+
+    private List<String> validAssignees;
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
@@ -71,9 +102,10 @@ public class QANotesList {
                             for (int i = 0, qaNotesSize = qaNotes.size(); i < qaNotesSize; i++) {
                                 QANote note = qaNotes.get(i);
                                 if (evt.getNewValue().equals(note)) {
-                                    table.getSelectionModel().setSelectionInterval(i, i);
+                                    int viewIndex = table.convertRowIndexToView(i);
+                                    table.getSelectionModel().setSelectionInterval(viewIndex, viewIndex);
                                     table.requestFocusInWindow();
-//TODO scroll to selected row
+                                    table.scrollRectToVisible(new Rectangle(table.getCellRect(viewIndex, 0, true)));
                                     return;
                                 }
                             }
@@ -92,6 +124,24 @@ public class QANotesList {
         return createTicketsAction;
     }
 
+    public List<String> getValidAssignees()
+    {
+        if (validAssignees == null) {
+            try {
+                validAssignees = new ArrayList<String>();
+                final List<User> assignees = ticketManager.getAssignees();
+                for (User user : assignees) {
+                    validAssignees.add(user.getLogin());
+                }
+            } catch (JAXBException e) {
+                throw new RuntimeException(e);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return validAssignees;
+    }
+
 // -------------------------- OTHER METHODS --------------------------
 
     /**
@@ -100,6 +150,11 @@ public class QANotesList {
     public JComponent $$$getRootComponent$$$()
     {
         return rootComponent;
+    }
+
+    public void addPropertyChangeListener(PropertyChangeListener listener)
+    {
+        changeSupport.addPropertyChangeListener(listener);
     }
 
     public void createTickets()
@@ -117,7 +172,7 @@ public class QANotesList {
         }
         for (int index = selectionModel.getMinSelectionIndex(); index <= selectionModel.getMaxSelectionIndex(); index++) {
             if (selectionModel.isSelectedIndex(index)) {
-                final QANote note = noteManager.getQANotes().get(index);
+                final QANote note = noteManager.getQANotes().get(table.convertRowIndexToModel(index));
                 if (StringUtils.isBlank(note.getTicket()) && username.equals(note.getReporter())) {
                     notesToTicketize.add(note);
                 } else {
@@ -131,6 +186,41 @@ public class QANotesList {
                 skippedNotes.size(), username);
             QANotifications.inform("Some notes were skipped", message, project);
         }
+    }
+
+    public void setFilterEmptyDescriptionNotes(boolean filterEmptyDescriptionNotes)
+    {
+        boolean oldValue = this.filterEmptyDescriptionNotes;
+        this.filterEmptyDescriptionNotes = filterEmptyDescriptionNotes;
+        changeSupport.firePropertyChange(FILTER_EMPTY_DESCRIPTION_NOTES_PROPERTY, oldValue, this.filterEmptyDescriptionNotes);
+    }
+
+    public void setFilterEmptyReporterNotes(boolean filterEmptyReporterNotes)
+    {
+        boolean oldValue = this.filterEmptyReporterNotes;
+        this.filterEmptyReporterNotes = filterEmptyReporterNotes;
+        changeSupport.firePropertyChange(FILTER_EMPTY_REPORTER_NOTES_PROPERTY, oldValue, this.filterEmptyReporterNotes);
+    }
+
+    public void setFilterEmptyRevisionNotes(boolean filterEmptyRevisionNotes)
+    {
+        boolean oldValue = this.filterEmptyRevisionNotes;
+        this.filterEmptyRevisionNotes = filterEmptyRevisionNotes;
+        changeSupport.firePropertyChange(FILTER_EMPTY_REVISION_NOTES_PROPERTY, oldValue, this.filterEmptyRevisionNotes);
+    }
+
+    public void setFilterInvalidAssigneeNotes(boolean filterInvalidAssigneeNotes)
+    {
+        boolean oldValue = this.filterInvalidAssigneeNotes;
+        this.filterInvalidAssigneeNotes = filterInvalidAssigneeNotes;
+        changeSupport.firePropertyChange(FILTER_INVALID_ASSIGNEE_NOTES_PROPERTY, oldValue, this.filterInvalidAssigneeNotes);
+    }
+
+    public void setFilterNoTicketNotes(boolean filterNoTicketNotes)
+    {
+        boolean oldValue = this.filterNoTicketNotes;
+        this.filterNoTicketNotes = filterNoTicketNotes;
+        changeSupport.firePropertyChange(FILTER_NO_TICKET_NOTES_PROPERTY, oldValue, this.filterNoTicketNotes);
     }
 
     /**
@@ -166,10 +256,36 @@ public class QANotesList {
                 if (selectionModel.isSelectionEmpty() || !selectionModel.isSelectedIndex(index)) {
                     noteManager.selectNote(null);
                 } else {
-                    noteManager.selectNote(noteManager.getQANotes().get(index));
+                    noteManager.selectNote(noteManager.getQANotes().get(table.convertRowIndexToModel(index)));
                 }
             }
         });
+        final TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
+        sorter.setRowFilter(new RowFilter<TableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends TableModel, ? extends Integer> entry)
+            {
+                if (filterNoTicketNotes && !StringUtils.isBlank(entry.getStringValue(4))) {
+                    return false;
+                }
+                if (filterEmptyDescriptionNotes && !StringUtils.isBlank(entry.getStringValue(1))) {
+                    return false;
+                }
+                if (filterEmptyReporterNotes && !StringUtils.isBlank(entry.getStringValue(2))) {
+                    return false;
+                }
+                if (filterEmptyRevisionNotes && !StringUtils.isBlank(entry.getStringValue(5))) {
+                    return false;
+                }
+                //noinspection RedundantIfStatement
+                if (filterInvalidAssigneeNotes && getValidAssignees().contains(entry.getStringValue(3))) {
+                    return false;
+                }
+
+                return true;
+            }
+        });
+        table.setRowSorter(sorter);
     }
 
 // -------------------------- INNER CLASSES --------------------------
@@ -184,6 +300,7 @@ public class QANotesList {
         private QANoteTablModel()
         {
             noteManager.addPropertyChangeListener(QANoteManager.QA_NOTES_PROPERTY, this);
+            QANotesList.this.addPropertyChangeListener(this);
         }
 
 // ------------------------ INTERFACE METHODS ------------------------
@@ -193,15 +310,21 @@ public class QANotesList {
 
         public void propertyChange(PropertyChangeEvent evt)
         {
-            ApplicationManager.getApplication().invokeLater(new Runnable() {
-                public void run()
-                {
-                    final TableModelEvent e = new TableModelEvent(QANoteTablModel.this);
-                    for (TableModelListener listener : listeners) {
-                        listener.tableChanged(e);
+            if (evt.getSource().equals(QANotesList.this)) {
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    public void run()
+                    {
+                        fireTableModelEvent();
                     }
-                }
-            });
+                });
+            } else {
+                ApplicationManager.getApplication().invokeLater(new Runnable() {
+                    public void run()
+                    {
+                        fireTableModelEvent();
+                    }
+                });
+            }
         }
 
 // --------------------- Interface TableModel ---------------------
@@ -213,14 +336,24 @@ public class QANotesList {
 
         public int getColumnCount()
         {
-            return 1;
+            return 6;
         }
 
         public String getColumnName(int columnIndex)
         {
             switch (columnIndex) {
                 case 0:
-                    return "Text";
+                    return "ID";
+                case 1:
+                    return "Description";
+                case 2:
+                    return "Reporter";
+                case 3:
+                    return "Assignee";
+                case 4:
+                    return "Ticket";
+                case 5:
+                    return "Revision";
                 default:
                     throw new IllegalArgumentException("Invalid column index: " + columnIndex);
             }
@@ -230,9 +363,11 @@ public class QANotesList {
         {
             switch (columnIndex) {
                 case 0:
-                    return String.class;
+                    return Long.class;
+                case 5:
+                    return Long.class;
                 default:
-                    throw new IllegalArgumentException("Invalid column index: " + columnIndex);
+                    return String.class;
             }
         }
 
@@ -243,10 +378,25 @@ public class QANotesList {
 
         public Object getValueAt(int rowIndex, int columnIndex)
         {
-            final QANote qaNote = noteManager.getQANotes().get(rowIndex);
+            final List<QANote> notes = noteManager.getQANotes();
+            if (notes.size() <= rowIndex) {
+//                In case notes get cleared between TableModelEvent and call to this method
+                return null;
+            }
+            final QANote qaNote = notes.get(rowIndex);
             switch (columnIndex) {
                 case 0:
+                    return qaNote.getId();
+                case 1:
                     return qaNote.getDescription();
+                case 2:
+                    return qaNote.getReporter();
+                case 3:
+                    return qaNote.getAssignee();
+                case 4:
+                    return qaNote.getTicket();
+                case 5:
+                    return qaNote.getRevision();
                 default:
                     throw new IllegalArgumentException("Invalid column index: " + columnIndex);
             }
@@ -265,6 +415,14 @@ public class QANotesList {
         public void removeTableModelListener(TableModelListener l)
         {
             listeners.remove(l);
+        }
+
+        private void fireTableModelEvent()
+        {
+            final TableModelEvent e = new TableModelEvent(this);
+            for (TableModelListener listener : listeners) {
+                listener.tableChanged(e);
+            }
         }
     }
 }
