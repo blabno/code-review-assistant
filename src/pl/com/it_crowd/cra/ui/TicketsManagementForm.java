@@ -110,7 +110,10 @@ public class TicketsManagementForm {
         table = new JTable(ticketModel);
         final TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
         table.setRowSorter(sorter);
-//        sorter.setRowFilter(RowFilter.andFilter());
+        final LinkCellRenderer renderer = new LinkCellRenderer();
+        table.setDefaultRenderer(Link.class, renderer);
+        table.addMouseListener(renderer);
+        table.addMouseMotionListener(renderer);
     }
 
 // -------------------------- INNER CLASSES --------------------------
@@ -160,6 +163,8 @@ public class TicketsManagementForm {
         public Class<?> getColumnClass(int columnIndex)
         {
             switch (columnIndex) {
+                case 0:
+                    return Link.class;
                 case 5:
                     return Long.class;
                 default:
@@ -177,7 +182,7 @@ public class TicketsManagementForm {
             final IssueWrapper ticket = tickets.get(rowIndex);
             switch (columnIndex) {
                 case 0:
-                    return ticket.getId();
+                    return new Link(ticketManager.getTicketURL(ticket.getId()), ticket.getId());
                 case 1:
                     return ticket.getFieldValue(Fields.summary);
                 case 2:

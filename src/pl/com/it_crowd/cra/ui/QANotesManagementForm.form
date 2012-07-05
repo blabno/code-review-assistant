@@ -26,6 +26,13 @@
               <text value=""/>
             </properties>
           </component>
+          <component id="fead8" class="javax.swing.JButton" binding="saveAllButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <icon value="actions/refresh.png"/>
+              <text value=""/>
+            </properties>
+          </component>
           <component id="1e252" class="javax.swing.JButton" binding="filtersButton" default-binding="true">
             <constraints/>
             <properties>

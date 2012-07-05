@@ -63,6 +63,8 @@ public class QANotesManagementForm {
 
     private JPanel rootComponent;
 
+    private JButton saveAllButton;
+
     private JButton scanCodeButton;
 
 // -------------------------- STATIC METHODS --------------------------
@@ -215,6 +217,12 @@ public class QANotesManagementForm {
                 filtersPopupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
         });
+        saveAllButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                noteManager.saveAllNotes();
+            }
+        });
     }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -248,6 +256,10 @@ public class QANotesManagementForm {
         closeButton.setIcon(new ImageIcon(getClass().getResource("/actions/cancel.png")));
         closeButton.setText("");
         toolBar1.add(closeButton);
+        saveAllButton = new JButton();
+        saveAllButton.setIcon(new ImageIcon(getClass().getResource("/actions/refresh.png")));
+        saveAllButton.setText("");
+        toolBar1.add(saveAllButton);
         filtersButton = new JButton();
         filtersButton.setText("Filters");
         toolBar1.add(filtersButton);

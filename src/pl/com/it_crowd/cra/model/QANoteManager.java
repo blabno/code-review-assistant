@@ -286,17 +286,7 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
             private void save(QANote note)
             {
-                try {
-                    syncToFile(note);
-                } catch (Exception e) {
-                    QANotifications.handle(e, "Problem saving note in file", note, project);
-                    return;
-                }
-                try {
-                    updateTicket(note);
-                } catch (Exception e) {
-                    QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
-                }
+                saveNoteSynchronouslyAndSafely(note);
             }
         });
     }
@@ -329,6 +319,24 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     public void refreshValidAssignees()
     {
         validAssignees = null;
+    }
+
+    public void saveAllNotes()
+    {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
+            public void run(@NotNull ProgressIndicator progressIndicator)
+            {
+                synchronized (qaNotes) {
+                    for (int i = 0, qaNotesSize = qaNotes.size(); i < qaNotesSize; i++) {
+                        QANote note = qaNotes.get(i);
+                        progressIndicator.setText(note.getFileName());
+                        progressIndicator.setText2(String.format("%d. %s", note.getId(), note.getDescription()));
+                        saveNoteSynchronouslyAndSafely(note);
+                        progressIndicator.setFraction(i / (double) qaNotesSize);
+                    }
+                }
+            }
+        });
     }
 
     public void saveNote(QANote note)
@@ -380,6 +388,21 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     {
         synchronized (qaNotes) {
             qaNotes.clear();
+        }
+    }
+
+    private void saveNoteSynchronouslyAndSafely(QANote note)
+    {
+        try {
+            syncToFile(note);
+        } catch (Exception e) {
+            QANotifications.handle(e, "Problem saving note in file", note, project);
+            return;
+        }
+        try {
+            updateTicket(note);
+        } catch (Exception e) {
+            QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
         }
     }
 

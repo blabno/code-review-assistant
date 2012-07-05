@@ -1,5 +1,6 @@
 package pl.com.it_crowd.cra.ui;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.ide.actions.OpenFileAction;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -11,10 +12,12 @@ import com.intellij.vcsUtil.VcsUtil;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
 import pl.com.it_crowd.cra.model.SyncToFileException;
+import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
 
+import javax.swing.AbstractAction;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
 import javax.swing.ImageIcon;
@@ -53,6 +56,8 @@ public class QANoteDetails {
 
     private JButton jumpToSourceButton;
 
+    private JButton navigateToYoutrackTicket;
+
     private QANote note;
 
     private QANoteManager noteManager;
@@ -70,6 +75,8 @@ public class QANoteDetails {
             }
         }
     };
+
+    private Project project;
 
     private JButton refreshAssigneesButton;
 
@@ -91,14 +98,17 @@ public class QANoteDetails {
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
-    public QANoteDetails(Project project)
+    public QANoteDetails(final Project project)
     {
+        this.project = project;
         this.noteManager = QANoteManager.getInstance(project);
         $$$setupUI$$$();
+        final GoToYoutrackTicketAction goToYoutrackTicketAction = new GoToYoutrackTicketAction();
         noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE_PROPERTY, new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent evt)
             {
                 setNote((QANote) evt.getNewValue());
+                goToYoutrackTicketAction.fireEnablePropertyChange();
             }
         });
         jumpToSourceButton.addActionListener(new ActionListener() {
@@ -170,6 +180,8 @@ public class QANoteDetails {
                 noteManager.refreshValidAssignees();
             }
         });
+
+        navigateToYoutrackTicket.setAction(goToYoutrackTicketAction);
     }
 
 // -------------------------- OTHER METHODS --------------------------
@@ -233,11 +245,6 @@ public class QANoteDetails {
         label5.setText("Ticket");
         rootComponent.add(label5, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
             GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        ticket = new JTextField();
-        ticket.setEditable(false);
-        rootComponent.add(ticket,
-            new GridConstraints(5, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
-                GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label6 = new JLabel();
         label6.setText("Type");
         rootComponent.add(label6, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
@@ -297,6 +304,21 @@ public class QANoteDetails {
         refreshAssigneesButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
         refreshAssigneesButton.setText("");
         panel1.add(refreshAssigneesButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        rootComponent.add(panel2, new GridConstraints(5, 1, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        ticket = new JTextField();
+        ticket.setColumns(0);
+        ticket.setEditable(false);
+        panel2.add(ticket, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
+            GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        navigateToYoutrackTicket = new JButton();
+        navigateToYoutrackTicket.setIcon(new ImageIcon(getClass().getResource("/ide/link.png")));
+        navigateToYoutrackTicket.setText("");
+        panel2.add(navigateToYoutrackTicket, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         label1.setLabelFor(reporter);
         label2.setLabelFor(file);
@@ -428,6 +450,36 @@ public class QANoteDetails {
             for (ListDataListener listener : listeners) {
                 listener.contentsChanged(event);
             }
+        }
+    }
+
+    private class GoToYoutrackTicketAction extends AbstractAction {
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface Action ---------------------
+
+        @Override
+        public boolean isEnabled()
+        {
+            return note != null && !StringUtils.isBlank(note.getTicket());
+        }
+
+// --------------------- Interface ActionListener ---------------------
+
+        public void actionPerformed(ActionEvent e)
+        {
+            if (!isEnabled() || note == null) {
+                return;
+            }
+            final String ticketURL = YoutrackTicketManager.getInstance(project).getTicketURL(note.getTicket());
+            BrowserUtil.launchBrowser(ticketURL);
+        }
+
+        private void fireEnablePropertyChange()
+        {
+            final boolean value = isEnabled();
+            changeSupport.firePropertyChange("enabled", !value, value);
         }
     }
 }
