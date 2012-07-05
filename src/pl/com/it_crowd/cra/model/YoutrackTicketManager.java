@@ -237,6 +237,11 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
         return api.getIndividualAssignees(youtrackProjectID);
     }
 
+    public IssueWrapper getTicket(String ticketId)
+    {
+        return tickets.get(ticketId);
+    }
+
     public String getTicketURL(String ticketId)
     {
         return String.format("%s/issue/%s", youtrackServiceLocation, ticketId);

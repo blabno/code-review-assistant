@@ -178,11 +178,13 @@ public class QANotesManagementForm {
 
         final JPopupMenu filtersPopupMenu = new JPopupMenu("Filters");
         final JCheckBoxMenuItem noTicketMenuItem = new JCheckBoxMenuItem("No ticket");
+        final JCheckBoxMenuItem missingTicketMenuItem = new JCheckBoxMenuItem("Missing ticket");
         final JCheckBoxMenuItem invalidAssigneeMenuItem = new JCheckBoxMenuItem("Invalid assignee");
         final JCheckBoxMenuItem emptyRevisonMenuItem = new JCheckBoxMenuItem("Empty revision");
         final JCheckBoxMenuItem emptyReporterMenuItem = new JCheckBoxMenuItem("Empty reporter");
         final JCheckBoxMenuItem emptyDescriptionMenuItem = new JCheckBoxMenuItem("Empty description");
         filtersPopupMenu.add(noTicketMenuItem);
+        filtersPopupMenu.add(missingTicketMenuItem);
         filtersPopupMenu.add(invalidAssigneeMenuItem);
         filtersPopupMenu.add(emptyDescriptionMenuItem);
         filtersPopupMenu.add(emptyReporterMenuItem);
@@ -192,6 +194,8 @@ public class QANotesManagementForm {
             {
                 if (noTicketMenuItem.equals(e.getItemSelectable())) {
                     qaNotesList.setFilterNoTicketNotes(ItemEvent.SELECTED == e.getStateChange());
+                } else if (missingTicketMenuItem.equals(e.getItemSelectable())) {
+                    qaNotesList.setFilterMissingTicketNotes(ItemEvent.SELECTED == e.getStateChange());
                 } else if (invalidAssigneeMenuItem.equals(e.getItemSelectable())) {
                     qaNotesList.setFilterInvalidAssigneeNotes(ItemEvent.SELECTED == e.getStateChange());
                 } else if (emptyRevisonMenuItem.equals(e.getItemSelectable())) {
@@ -203,6 +207,7 @@ public class QANotesManagementForm {
                 }
             }
         };
+        missingTicketMenuItem.addItemListener(itemListener);
         noTicketMenuItem.addItemListener(itemListener);
         invalidAssigneeMenuItem.addItemListener(itemListener);
         emptyDescriptionMenuItem.addItemListener(itemListener);
