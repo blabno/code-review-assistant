@@ -19,6 +19,7 @@ import pl.com.it_crowd.cra.youtrack.QANoteTypeValues;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
 import pl.com.it_crowd.youtrack.api.rest.User;
 
+import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
@@ -28,7 +29,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 //TODO would be great to first save all edited files to disk and then run the scanner
 @com.intellij.openapi.components.State(
@@ -54,6 +57,24 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
     private Long defaultRevision;
 
+    private PropertyChangeListener notePropertyChangeListener = new PropertyChangeListener() {
+        public void propertyChange(PropertyChangeEvent evt)
+        {
+            if (!(evt.getSource() instanceof QANote)) {
+                return;
+            }
+            final QANote note = (QANote) evt.getSource();
+            if (QANote.TICKET_PROPERTY.equals(evt.getPropertyName())) {
+                if (evt.getOldValue() != null) {
+                    ticket2Note.remove(evt.getOldValue().toString());
+                }
+                if (evt.getNewValue() != null) {
+                    ticket2Note.put(evt.getNewValue().toString(), note);
+                }
+            }
+        }
+    };
+
     private Project project;
 
     private final List<QANote> qaNotes = new ArrayList<QANote>();
@@ -61,6 +82,8 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     private QANoteScanner scanner;
 
     private QANote selectedNote;
+
+    private final Map<String, QANote> ticket2Note = new HashMap<String, QANote>();
 
     private final List<QANote> unmodifiableQANotes;
 
@@ -306,6 +329,11 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
         return scanner.getFile(note);
     }
 
+    public QANote getNoteByTicket(String ticketId)
+    {
+        return ticket2Note.get(ticketId);
+    }
+
     public List<QANote> getQANotes()
     {
         return qaNotes;
@@ -363,6 +391,10 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     private void addQANote(QANote note)
     {
         qaNotes.add(note);
+        note.addPropertyChangeListener(notePropertyChangeListener);
+        if (!StringUtils.isBlank(note.getTicket())) {
+            ticket2Note.put(note.getTicket(), note);
+        }
     }
 
     private void loadQANotesFromCode()
@@ -388,6 +420,7 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     {
         synchronized (qaNotes) {
             qaNotes.clear();
+            ticket2Note.clear();
         }
     }
 

@@ -22,7 +22,14 @@
           <component id="5138a" class="javax.swing.JButton" binding="getTicketsButton" default-binding="true">
             <constraints/>
             <properties>
-              <text value="Get tickets"/>
+              <icon value="actions/sync.png"/>
+              <text value=""/>
+            </properties>
+          </component>
+          <component id="50b3f" class="javax.swing.JButton" binding="filtersButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <text value="Filters"/>
             </properties>
           </component>
         </children>

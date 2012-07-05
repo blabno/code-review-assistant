@@ -12,7 +12,6 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import org.apache.commons.lang.StringUtils;
 import pl.com.it_crowd.cra.model.QANoteManager;
-import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.scanner.QANote;
 
 import javax.swing.ImageIcon;
@@ -87,7 +86,7 @@ public class QANotesManagementForm {
             });
             toolWindow.getContentManager().addContent(content);
 
-            TicketsManagementForm ticketsManagementForm = new TicketsManagementForm(YoutrackTicketManager.getInstance(project));
+            TicketsManagementForm ticketsManagementForm = new TicketsManagementForm(project);
             content = ContentFactory.SERVICE.getInstance().createContent(ticketsManagementForm.$$$getRootComponent$$$(), "Youtrack Tickets", false);
             toolWindow.getContentManager().addContent(content);
         }
@@ -253,22 +252,28 @@ public class QANotesManagementForm {
             new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
                 GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         closeButton = new JButton();
-        closeButton.setIcon(new ImageIcon(getClass().getResource("/actions/cancel.png")));
+        closeButton.setIcon(new ImageIcon(getClass().getResource("/actions/exit.png")));
         closeButton.setText("");
+        closeButton.setToolTipText("Exit");
         toolBar1.add(closeButton);
         saveAllButton = new JButton();
-        saveAllButton.setIcon(new ImageIcon(getClass().getResource("/actions/refresh.png")));
+        saveAllButton.setIcon(new ImageIcon(getClass().getResource("/actions/menu-saveall.png")));
         saveAllButton.setText("");
+        saveAllButton.setToolTipText("Save all");
         toolBar1.add(saveAllButton);
+        scanCodeButton = new JButton();
+        scanCodeButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
+        scanCodeButton.setText("");
+        scanCodeButton.setToolTipText("Scan code");
+        toolBar1.add(scanCodeButton);
+        createTicketsButton = new JButton();
+        createTicketsButton.setIcon(new ImageIcon(getClass().getResource("/actions/execute.png")));
+        createTicketsButton.setText("");
+        createTicketsButton.setToolTipText("Create tickets");
+        toolBar1.add(createTicketsButton);
         filtersButton = new JButton();
         filtersButton.setText("Filters");
         toolBar1.add(filtersButton);
-        scanCodeButton = new JButton();
-        scanCodeButton.setText("Scan code");
-        toolBar1.add(scanCodeButton);
-        createTicketsButton = new JButton();
-        createTicketsButton.setText("Create tickets");
-        toolBar1.add(createTicketsButton);
         final JLabel label1 = new JLabel();
         label1.setText("Default author");
         toolBar1.add(label1);

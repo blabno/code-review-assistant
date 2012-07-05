@@ -1,8 +1,10 @@
 package pl.com.it_crowd.cra.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import pl.com.it_crowd.cra.model.QANoteManager;
 import pl.com.it_crowd.cra.model.YoutrackTicketManager;
 import pl.com.it_crowd.cra.youtrack.QAFields;
 import pl.com.it_crowd.youtrack.api.Filter;
@@ -10,9 +12,12 @@ import pl.com.it_crowd.youtrack.api.IssueWrapper;
 import pl.com.it_crowd.youtrack.api.defaults.Fields;
 import pl.com.it_crowd.youtrack.api.defaults.StateValues;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToolBar;
@@ -24,6 +29,10 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
@@ -32,7 +41,15 @@ import java.util.List;
 public class TicketsManagementForm {
 // ------------------------------ FIELDS ------------------------------
 
+    private boolean filterNoQANoteTickes;
+
+    private final List<IssueWrapper> filteredTickets = new ArrayList<IssueWrapper>();
+
+    private JButton filtersButton;
+
     private JButton getTicketsButton;
+
+    private QANoteManager noteManager;
 
     private JPanel rootComponent;
 
@@ -46,9 +63,10 @@ public class TicketsManagementForm {
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
-    public TicketsManagementForm(YoutrackTicketManager ticketManager)
+    public TicketsManagementForm(Project project)
     {
-        this.ticketManager = ticketManager;
+        this.ticketManager = YoutrackTicketManager.getInstance(project);
+        this.noteManager = QANoteManager.getInstance(project);
         $$$setupUI$$$();
         ticketManager.addPropertyChangeListener(YoutrackTicketManager.TICKETS_PROPERTY, new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent evt)
@@ -56,14 +74,33 @@ public class TicketsManagementForm {
                 synchronized (tickets) {
                     tickets.clear();
                     tickets.addAll(TicketsManagementForm.this.ticketManager.getTickets());
-                    ticketModel.tableChanged();
+                    filterTickets();
                 }
             }
         });
         getTicketsButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e)
             {
-                TicketsManagementForm.this.ticketManager.fetchTickets(Filter.stateFilter(StateValues.Unresolved));
+                TicketsManagementForm.this.ticketManager.fetchTickets(Filter.stateFilter(StateValues.Unresolved).maxResults(999999));
+            }
+        });
+        final JPopupMenu filtersPopupMenu = new JPopupMenu();
+        final JCheckBoxMenuItem noQANoteMenuItem = new JCheckBoxMenuItem("No QANote");
+        filtersPopupMenu.add(noQANoteMenuItem);
+        final ItemListener itemListener = new ItemListener() {
+            public void itemStateChanged(ItemEvent e)
+            {
+                if (noQANoteMenuItem.equals(e.getItemSelectable())) {
+                    setFilterNoQANoteTickes(ItemEvent.SELECTED == e.getStateChange());
+                }
+            }
+        };
+        noQANoteMenuItem.addItemListener(itemListener);
+        filtersButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                filtersPopupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
         });
     }
@@ -76,6 +113,12 @@ public class TicketsManagementForm {
     public JComponent $$$getRootComponent$$$()
     {
         return rootComponent;
+    }
+
+    public void setFilterNoQANoteTickes(boolean filterNoQANoteTickes)
+    {
+        this.filterNoQANoteTickes = filterNoQANoteTickes;
+        filterTickets();
     }
 
     /**
@@ -96,8 +139,12 @@ public class TicketsManagementForm {
             new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
                 GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         getTicketsButton = new JButton();
-        getTicketsButton.setText("Get tickets");
+        getTicketsButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
+        getTicketsButton.setText("");
         toolBar1.add(getTicketsButton);
+        filtersButton = new JButton();
+        filtersButton.setText("Filters");
+        toolBar1.add(filtersButton);
         final JScrollPane scrollPane1 = new JScrollPane();
         rootComponent.add(scrollPane1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW,
@@ -116,6 +163,21 @@ public class TicketsManagementForm {
         table.addMouseMotionListener(renderer);
     }
 
+    private void filterTickets()
+    {
+        filteredTickets.clear();
+        for (IssueWrapper ticket : tickets) {
+            boolean include = true;
+            if (filterNoQANoteTickes && noteManager.getNoteByTicket(ticket.getId()) != null) {
+                include = false;
+            }
+            if (include) {
+                filteredTickets.add(ticket);
+            }
+        }
+        ticketModel.tableChanged();
+    }
+
 // -------------------------- INNER CLASSES --------------------------
 
     private class TicketModel implements TableModel {
@@ -130,7 +192,7 @@ public class TicketsManagementForm {
 
         public int getRowCount()
         {
-            return tickets.size();
+            return filteredTickets.size();
         }
 
         public int getColumnCount()
@@ -179,7 +241,7 @@ public class TicketsManagementForm {
 
         public Object getValueAt(int rowIndex, int columnIndex)
         {
-            final IssueWrapper ticket = tickets.get(rowIndex);
+            final IssueWrapper ticket = filteredTickets.get(rowIndex);
             switch (columnIndex) {
                 case 0:
                     return new Link(ticketManager.getTicketURL(ticket.getId()), ticket.getId());
@@ -215,9 +277,7 @@ public class TicketsManagementForm {
             listeners.remove(l);
         }
 
-// -------------------------- OTHER METHODS --------------------------
-
-        public void tableChanged()
+        private void tableChanged()
         {
             ApplicationManager.getApplication().invokeLater(new Runnable() {
                 public void run()

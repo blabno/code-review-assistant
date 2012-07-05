@@ -22,33 +22,39 @@
           <component id="6d9cb" class="javax.swing.JButton" binding="closeButton">
             <constraints/>
             <properties>
-              <icon value="actions/cancel.png"/>
+              <icon value="actions/exit.png"/>
               <text value=""/>
+              <toolTipText value="Exit"/>
             </properties>
           </component>
           <component id="fead8" class="javax.swing.JButton" binding="saveAllButton" default-binding="true">
             <constraints/>
             <properties>
-              <icon value="actions/refresh.png"/>
+              <icon value="actions/menu-saveall.png"/>
               <text value=""/>
+              <toolTipText value="Save all"/>
+            </properties>
+          </component>
+          <component id="878bf" class="javax.swing.JButton" binding="scanCodeButton">
+            <constraints/>
+            <properties>
+              <icon value="actions/sync.png"/>
+              <text value=""/>
+              <toolTipText value="Scan code"/>
+            </properties>
+          </component>
+          <component id="58ddd" class="javax.swing.JButton" binding="createTicketsButton" default-binding="true">
+            <constraints/>
+            <properties>
+              <icon value="actions/execute.png"/>
+              <text value=""/>
+              <toolTipText value="Create tickets"/>
             </properties>
           </component>
           <component id="1e252" class="javax.swing.JButton" binding="filtersButton" default-binding="true">
             <constraints/>
             <properties>
               <text value="Filters"/>
-            </properties>
-          </component>
-          <component id="878bf" class="javax.swing.JButton" binding="scanCodeButton">
-            <constraints/>
-            <properties>
-              <text value="Scan code"/>
-            </properties>
-          </component>
-          <component id="58ddd" class="javax.swing.JButton" binding="createTicketsButton" default-binding="true">
-            <constraints/>
-            <properties>
-              <text value="Create tickets"/>
             </properties>
           </component>
           <component id="2ed15" class="javax.swing.JLabel">
