@@ -48,7 +48,7 @@ public class CodeReviewProjectConfigurable implements Configurable {
 
     public Icon getIcon()
     {
-        return new ImageIcon(CodeReviewProjectConfigurable.class.getResource("/icons/code-review-small.png"));
+        return new ImageIcon(CodeReviewProjectConfigurable.class.getResource("/icons/compare-revisions-small.png"));
     }
 
     public String getHelpTopic()

@@ -31,7 +31,7 @@ import com.intellij.util.containers.Convertor;
 import com.intellij.vcsUtil.VcsUtil;
 import org.jetbrains.annotations.Nullable;
 import org.tmatesoft.svn.core.wc.SVNStatusType;
-import pl.com.it_crowd.cra.actions.CodeReviewAction;
+import pl.com.it_crowd.cra.actions.CompareRevisionsAction;
 import pl.com.it_crowd.cra.model.AssistantHelper;
 import pl.com.it_crowd.cra.model.CodeReviewAssistant;
 
@@ -112,7 +112,7 @@ public class CodeReviewAssistantPanel {
                 }
             });
             toolWindow.getContentManager().addContent(content);
-            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/code-review-small.png")));
+            toolWindow.setIcon(new ImageIcon(CodeReviewAssistantPanel.class.getResource("/icons/compare-revisions-small.png")));
         }
         return toolWindow;
     }
@@ -158,7 +158,7 @@ public class CodeReviewAssistantPanel {
             public void actionPerformed(ActionEvent e)
             {
                 final ActionManager actionManager = ActionManager.getInstance();
-                final AnAction anAction = actionManager.getAction(CodeReviewAction.ACTION_ID);
+                final AnAction anAction = actionManager.getAction(CompareRevisionsAction.ACTION_ID);
                 anAction.actionPerformed(new AnActionEvent(null, DataManager.getInstance().getDataContext((Component) e.getSource()), ActionPlaces.UNKNOWN,
                     anAction.getTemplatePresentation().clone(), actionManager, 0));
             }

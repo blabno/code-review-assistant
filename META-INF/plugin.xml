@@ -20,7 +20,7 @@
     </project-components>
 
     <actions>
-        <action id="CodeReview" class="pl.com.it_crowd.cra.actions.CodeReviewAction" text="Code review" icon="/icons/code-review-small.png">
+        <action id="CodeReview" class="pl.com.it_crowd.cra.actions.CompareRevisionsAction" text="Code review" icon="/icons/compare-revisions-small.png">
             <add-to-group group-id="VcsToobarActions" anchor="after" relative-to-action="ChangesView.Rollback"/>
             <add-to-group group-id="VcsGlobalGroup" anchor="after" relative-to-action="Vcs.UpdateProject"/>
         </action>
