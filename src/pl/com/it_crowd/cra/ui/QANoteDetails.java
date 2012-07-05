@@ -16,7 +16,10 @@ import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
 
 import javax.swing.ButtonGroup;
+import javax.swing.ComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -24,6 +27,8 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -32,11 +37,13 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class QANoteDetails {
 // ------------------------------ FIELDS ------------------------------
 
-    private JTextField assignee;
+    private JComboBox assignee;
 
     private JButton cancelButton;
 
@@ -47,6 +54,8 @@ public class QANoteDetails {
     private JButton jumpToSourceButton;
 
     private QANote note;
+
+    private QANoteManager noteManager;
 
     private final PropertyChangeListener notePropertyChangeListener = new PropertyChangeListener() {
         public void propertyChange(PropertyChangeEvent evt)
@@ -61,6 +70,8 @@ public class QANoteDetails {
             }
         }
     };
+
+    private JButton refreshAssigneesButton;
 
     private JTextField reporter;
 
@@ -82,9 +93,9 @@ public class QANoteDetails {
 
     public QANoteDetails(Project project)
     {
-        final QANoteManager noteManager = QANoteManager.getInstance(project);
+        this.noteManager = QANoteManager.getInstance(project);
         $$$setupUI$$$();
-        noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE, new PropertyChangeListener() {
+        noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE_PROPERTY, new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent evt)
             {
                 setNote((QANote) evt.getNewValue());
@@ -131,8 +142,8 @@ public class QANoteDetails {
                 if (!StringUtils.isBlank(file.getText())) {
                     note.setFileName(file.getText());
                 }
-                if (!StringUtils.isBlank(assignee.getText())) {
-                    note.setAssignee(assignee.getText());
+                if (assignee.getSelectedItem() != null) {
+                    note.setAssignee(assignee.getSelectedItem().toString());
                 }
                 if (!StringUtils.isBlank(reporter.getText())) {
                     note.setReporter(reporter.getText());
@@ -151,6 +162,12 @@ public class QANoteDetails {
             public void actionPerformed(ActionEvent e)
             {
                 loadDetails(note);
+            }
+        });
+        refreshAssigneesButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e)
+            {
+                noteManager.refreshValidAssignees();
             }
         });
     }
@@ -174,6 +191,7 @@ public class QANoteDetails {
      */
     private void $$$setupUI$$$()
     {
+        createUIComponents();
         rootComponent = new JPanel();
         rootComponent.setLayout(new GridLayoutManager(10, 4, new Insets(0, 0, 0, 0), -1, -1));
         final Spacer spacer1 = new Spacer();
@@ -201,10 +219,6 @@ public class QANoteDetails {
         label3.setText("Assignee");
         rootComponent.add(label3, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
             GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        assignee = new JTextField();
-        rootComponent.add(assignee,
-            new GridConstraints(3, 1, 1, 3, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
-                GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label4 = new JLabel();
         label4.setText("Revision");
         rootComponent.add(label4, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED,
@@ -271,6 +285,19 @@ public class QANoteDetails {
         cancelButton.setText("Cancel");
         rootComponent.add(cancelButton, new GridConstraints(9, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        rootComponent.add(panel1, new GridConstraints(3, 1, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        assignee.setEditable(true);
+        panel1.add(assignee, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW,
+            GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        refreshAssigneesButton = new JButton();
+        refreshAssigneesButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
+        refreshAssigneesButton.setText("");
+        panel1.add(refreshAssigneesButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         label1.setLabelFor(reporter);
         label2.setLabelFor(file);
         label3.setLabelFor(assignee);
@@ -284,12 +311,17 @@ public class QANoteDetails {
         buttonGroup.add(violationRadioButton);
     }
 
+    private void createUIComponents()
+    {
+        assignee = new JComboBox(new AssigneeModel());
+    }
+
     private void loadDetails(QANote note)
     {
         temporaryId.setText("");
         description.setText("");
         file.setText("");
-        assignee.setText("");
+        assignee.setSelectedItem(null);
         reporter.setText("");
         revision.setText("");
         suggestionRadioButton.setSelected(false);
@@ -298,7 +330,9 @@ public class QANoteDetails {
         if (note != null) {
             description.setText(note.getDescription());
             file.setText(note.getFileName());
-            assignee.setText(note.getAssignee());
+            if (!StringUtils.isBlank(note.getAssignee())) {
+                assignee.setSelectedItem(note.getAssignee());
+            }
             reporter.setText(note.getReporter());
             if (note.getRevision() != null) {
                 revision.setText(note.getRevision().toString());
@@ -328,4 +362,73 @@ public class QANoteDetails {
             }
         });
     }
+
+// -------------------------- INNER CLASSES --------------------------
+
+    private class AssigneeModel implements ComboBoxModel, PropertyChangeListener {
+// ------------------------------ FIELDS ------------------------------
+
+        private List<ListDataListener> listeners = new ArrayList<ListDataListener>();
+
+        private Object selectedItem;
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+        private AssigneeModel()
+        {
+            noteManager.addPropertyChangeListener(QANoteManager.VALID_ASSIGNEES_PROPERTY, this);
+        }
+
+// --------------------- GETTER / SETTER METHODS ---------------------
+
+        public Object getSelectedItem()
+        {
+            return selectedItem;
+        }
+
+        public void setSelectedItem(Object anItem)
+        {
+            this.selectedItem = anItem;
+            final ListDataEvent event = new ListDataEvent(this, ListDataEvent.INTERVAL_ADDED, 0, getSize());
+            for (ListDataListener listener : listeners) {
+                listener.intervalAdded(event);
+            }
+        }
+
+// ------------------------ INTERFACE METHODS ------------------------
+
+
+// --------------------- Interface ListModel ---------------------
+
+        public int getSize()
+        {
+            return noteManager.getValidAssignees().size();
+        }
+
+        public Object getElementAt(int index)
+        {
+            return noteManager.getValidAssignees().get(index);
+        }
+
+        public void addListDataListener(ListDataListener l)
+        {
+            listeners.add(l);
+        }
+
+        public void removeListDataListener(ListDataListener l)
+        {
+            listeners.remove(l);
+        }
+
+// --------------------- Interface PropertyChangeListener ---------------------
+
+        public void propertyChange(PropertyChangeEvent evt)
+        {
+            final ListDataEvent event = new ListDataEvent(this, ListDataEvent.CONTENTS_CHANGED, 0, getSize());
+            for (ListDataListener listener : listeners) {
+                listener.contentsChanged(event);
+            }
+        }
+    }
 }
+

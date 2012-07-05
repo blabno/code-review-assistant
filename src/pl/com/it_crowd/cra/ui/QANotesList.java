@@ -89,7 +89,7 @@ public class QANotesList {
         this.noteManager = QANoteManager.getInstance(project);
         this.ticketManager = YoutrackTicketManager.getInstance(project);
         $$$setupUI$$$();
-        noteManager.addPropertyChangeListener(QANoteManager.HIGHLIGHTED_NOTE, new PropertyChangeListener() {
+        noteManager.addPropertyChangeListener(QANoteManager.HIGHLIGHTED_NOTE_PROPERTY, new PropertyChangeListener() {
             public void propertyChange(final PropertyChangeEvent evt)
             {
                 ApplicationManager.getApplication().invokeLater(new Runnable() {

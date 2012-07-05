@@ -17,6 +17,7 @@ import pl.com.it_crowd.cra.scanner.QANoteScanner;
 import pl.com.it_crowd.cra.youtrack.QACommand;
 import pl.com.it_crowd.cra.youtrack.QANoteTypeValues;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
+import pl.com.it_crowd.youtrack.api.rest.User;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -39,11 +40,13 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
     public static final String COMPONENT_NAME = "QANoteManager";
 
-    public static final String HIGHLIGHTED_NOTE = "highlightedNote";
+    public static final String HIGHLIGHTED_NOTE_PROPERTY = "highlightedNote";
 
     public static final String QA_NOTES_PROPERTY = "qaNotes";
 
-    public static final String SELECTED_NOTE = "selectedNote";
+    public static final String SELECTED_NOTE_PROPERTY = "selectedNote";
+
+    public static final String VALID_ASSIGNEES_PROPERTY = "validAssignees";
 
     private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
 
@@ -60,6 +63,8 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     private QANote selectedNote;
 
     private final List<QANote> unmodifiableQANotes;
+
+    private List<String> validAssignees;
 
 // -------------------------- STATIC METHODS --------------------------
 
@@ -107,6 +112,23 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     public QANote getSelectedNote()
     {
         return selectedNote;
+    }
+
+    public List<String> getValidAssignees()
+    {
+        if (validAssignees == null) {
+            try {
+                final List<User> assignees = YoutrackTicketManager.getInstance(project).getAssignees();
+                validAssignees = new ArrayList<String>();
+                for (User user : assignees) {
+                    validAssignees.add(user.getLogin());
+                }
+                changeSupport.firePropertyChange(VALID_ASSIGNEES_PROPERTY, null, validAssignees);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return validAssignees;
     }
 
 // ------------------------ INTERFACE METHODS ------------------------
@@ -281,7 +303,12 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
     public void highlightSelectedNote()
     {
-        changeSupport.firePropertyChange(HIGHLIGHTED_NOTE, null, getSelectedNote());
+        changeSupport.firePropertyChange(HIGHLIGHTED_NOTE_PROPERTY, null, getSelectedNote());
+    }
+
+    public void refreshValidAssignees()
+    {
+        validAssignees = null;
     }
 
     public void saveNote(QANote note)
@@ -296,7 +323,7 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     {
         final QANote oldValue = this.selectedNote;
         this.selectedNote = note;
-        changeSupport.firePropertyChange(SELECTED_NOTE, oldValue, note);
+        changeSupport.firePropertyChange(SELECTED_NOTE_PROPERTY, oldValue, note);
     }
 
     /**
