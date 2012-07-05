@@ -207,12 +207,10 @@ public class CodeReviewAssistantPanel {
                 GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         closeButton = new JButton();
         closeButton.setIcon(new ImageIcon(getClass().getResource("/actions/cancel.png")));
-        closeButton.setText("");
         closeButton.setToolTipText("Close");
         toolBar1.add(closeButton);
         diffButton = new JButton();
         diffButton.setIcon(new ImageIcon(getClass().getResource("/actions/diff.png")));
-        diffButton.setText("");
         diffButton.setToolTipText("Diff");
         toolBar1.add(diffButton);
         revisionsButton = new JButton();

@@ -36,7 +36,6 @@
             <constraints/>
             <properties>
               <icon value="actions/cancel.png"/>
-              <text value=""/>
               <toolTipText value="Close"/>
             </properties>
           </component>
@@ -44,7 +43,6 @@
             <constraints/>
             <properties>
               <icon value="actions/diff.png"/>
-              <text value=""/>
               <toolTipText value="Diff"/>
             </properties>
           </component>

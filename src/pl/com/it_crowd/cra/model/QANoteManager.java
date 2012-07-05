@@ -17,7 +17,7 @@ import pl.com.it_crowd.cra.scanner.QANoteScanner;
 import pl.com.it_crowd.cra.youtrack.QACommand;
 import pl.com.it_crowd.cra.youtrack.QANoteTypeValues;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
-import pl.com.it_crowd.youtrack.api.rest.User;
+import pl.com.it_crowd.youtrack.api.rest.AssigneeType;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -141,9 +141,9 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
     {
         if (validAssignees == null) {
             try {
-                final List<User> assignees = YoutrackTicketManager.getInstance(project).getAssignees();
+                final List<AssigneeType> assignees = YoutrackTicketManager.getInstance(project).getAssignees();
                 validAssignees = new ArrayList<String>();
-                for (User user : assignees) {
+                for (AssigneeType user : assignees) {
                     validAssignees.add(user.getLogin());
                 }
                 changeSupport.firePropertyChange(VALID_ASSIGNEES_PROPERTY, null, validAssignees);
@@ -351,7 +351,7 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
     public void saveAllNotes()
     {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Saving all QANotes") {
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
                 synchronized (qaNotes) {
@@ -432,10 +432,12 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
             QANotifications.handle(e, "Problem saving note in file", note, project);
             return;
         }
-        try {
-            updateTicket(note);
-        } catch (Exception e) {
-            QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
+        if (!StringUtils.isBlank(note.getTicket())) {
+            try {
+                updateTicket(note);
+            } catch (Exception e) {
+                QANotifications.handle(e, "Problem updating youtrack ticket", note, project);
+            }
         }
     }
 
@@ -477,7 +479,7 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
 
     private void updateTicketAsynchronously(final QANote note)
     {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack ticket") {
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Updating Youtrack ticket") {
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
                 try {

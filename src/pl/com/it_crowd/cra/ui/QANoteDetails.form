@@ -207,7 +207,6 @@
             </constraints>
             <properties>
               <icon value="actions/sync.png"/>
-              <text value=""/>
             </properties>
           </component>
         </children>
@@ -237,7 +236,6 @@
             </constraints>
             <properties>
               <icon value="ide/link.png"/>
-              <text value=""/>
             </properties>
           </component>
         </children>

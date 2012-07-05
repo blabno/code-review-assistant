@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import pl.com.it_crowd.youtrack.api.Filter;
 import pl.com.it_crowd.youtrack.api.IssueWrapper;
 import pl.com.it_crowd.youtrack.api.YoutrackAPI;
-import pl.com.it_crowd.youtrack.api.rest.User;
+import pl.com.it_crowd.youtrack.api.rest.AssigneeList;
+import pl.com.it_crowd.youtrack.api.rest.AssigneeType;
 
 import javax.xml.bind.JAXBException;
 import java.beans.PropertyChangeListener;
@@ -231,10 +232,11 @@ public class YoutrackTicketManager implements ProjectComponent, PersistentStateC
         });
     }
 
-    public List<User> getAssignees() throws JAXBException, IOException
+    public List<AssigneeType> getAssignees() throws JAXBException, IOException
     {
         final YoutrackAPI api = getYoutrackAPI();
-        return api.getIndividualAssignees(youtrackProjectID);
+        final AssigneeList assigneeList = api.getAssignees(youtrackProjectID);
+        return assigneeList.getAssignees().getAssignees();
     }
 
     public IssueWrapper getTicket(String ticketId)

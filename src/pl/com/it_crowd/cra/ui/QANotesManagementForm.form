@@ -23,7 +23,6 @@
             <constraints/>
             <properties>
               <icon value="actions/exit.png"/>
-              <text value=""/>
               <toolTipText value="Exit"/>
             </properties>
           </component>
@@ -31,7 +30,6 @@
             <constraints/>
             <properties>
               <icon value="actions/menu-saveall.png"/>
-              <text value=""/>
               <toolTipText value="Save all"/>
             </properties>
           </component>
@@ -39,7 +37,6 @@
             <constraints/>
             <properties>
               <icon value="actions/sync.png"/>
-              <text value=""/>
               <toolTipText value="Scan code"/>
             </properties>
           </component>
@@ -47,7 +44,6 @@
             <constraints/>
             <properties>
               <icon value="actions/execute.png"/>
-              <text value=""/>
               <toolTipText value="Create tickets"/>
             </properties>
           </component>

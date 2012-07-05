@@ -2,7 +2,7 @@
     <name>Code review assistant</name>
     <description>Helps to do code review for set of revisions</description>
     <version>1.0.1-SNAPSHOT</version>
-    <vendor email="contact@it-crowd.com.pl" url="http://it-crowd.com.pl" logo="/icons/code-review.png">IT Crowd</vendor>
+    <vendor email="contact@it-crowd.com.pl" url="http://it-crowd.com.pl" logo="/icons/compare-revisions.png">IT Crowd</vendor>
 
     <!-- please see http://confluence.jetbrains.net/display/IDEADEV/Build+Number+Ranges for description -->
     <idea-version since-build="107.105"/>

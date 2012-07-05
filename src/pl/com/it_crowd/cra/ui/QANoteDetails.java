@@ -18,8 +18,10 @@ import pl.com.it_crowd.cra.scanner.QASuggestion;
 import pl.com.it_crowd.cra.scanner.QAViolation;
 
 import javax.swing.AbstractAction;
+import javax.swing.Action;
 import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -103,7 +105,8 @@ public class QANoteDetails {
         this.project = project;
         this.noteManager = QANoteManager.getInstance(project);
         $$$setupUI$$$();
-        final GoToYoutrackTicketAction goToYoutrackTicketAction = new GoToYoutrackTicketAction();
+        final GoToYoutrackTicketAction goToYoutrackTicketAction = new GoToYoutrackTicketAction("Go to Youtrack",
+            new ImageIcon(getClass().getResource("/ide/link.png")));
         noteManager.addPropertyChangeListener(QANoteManager.SELECTED_NOTE_PROPERTY, new PropertyChangeListener() {
             public void propertyChange(PropertyChangeEvent evt)
             {
@@ -302,7 +305,6 @@ public class QANoteDetails {
             GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         refreshAssigneesButton = new JButton();
         refreshAssigneesButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
-        refreshAssigneesButton.setText("");
         panel1.add(refreshAssigneesButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel2 = new JPanel();
@@ -317,7 +319,6 @@ public class QANoteDetails {
             GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         navigateToYoutrackTicket = new JButton();
         navigateToYoutrackTicket.setIcon(new ImageIcon(getClass().getResource("/ide/link.png")));
-        navigateToYoutrackTicket.setText("");
         panel2.add(navigateToYoutrackTicket, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         label1.setLabelFor(reporter);
@@ -454,6 +455,14 @@ public class QANoteDetails {
     }
 
     private class GoToYoutrackTicketAction extends AbstractAction {
+// --------------------------- CONSTRUCTORS ---------------------------
+
+        private GoToYoutrackTicketAction(String tooltip, Icon icon)
+        {
+            putValue(Action.SHORT_DESCRIPTION, tooltip);
+            putValue(Action.SMALL_ICON, icon);
+        }
+
 // ------------------------ INTERFACE METHODS ------------------------
 
 

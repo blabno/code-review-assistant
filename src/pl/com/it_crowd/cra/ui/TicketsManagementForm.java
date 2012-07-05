@@ -140,7 +140,6 @@ public class TicketsManagementForm {
                 GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(-1, 20), null, 0, false));
         getTicketsButton = new JButton();
         getTicketsButton.setIcon(new ImageIcon(getClass().getResource("/actions/sync.png")));
-        getTicketsButton.setText("");
         toolBar1.add(getTicketsButton);
         filtersButton = new JButton();
         filtersButton.setText("Filters");

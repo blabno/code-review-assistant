@@ -23,7 +23,6 @@
             <constraints/>
             <properties>
               <icon value="actions/sync.png"/>
-              <text value=""/>
             </properties>
           </component>
           <component id="50b3f" class="javax.swing.JButton" binding="filtersButton" default-binding="true">
