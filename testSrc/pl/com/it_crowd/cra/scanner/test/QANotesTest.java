@@ -1,6 +1,5 @@
 package pl.com.it_crowd.cra.scanner.test;
 
-import org.apache.commons.collections.comparators.NullComparator;
 import org.junit.Assert;
 import org.junit.Test;
 import pl.com.it_crowd.cra.scanner.QANoteConverter;
@@ -147,16 +146,6 @@ public class QANotesTest {
         Assert.assertEquals(comment, newComment);
         newComment = new QANoteConverter().getAsString(new QANoteScanner().toQANote(newComment, false));
         Assert.assertEquals(comment, newComment);
-    }
-
-    @Test
-    public void rubish()
-    {
-        System.out.println(new NullComparator().compare(null, null));
-        System.out.println(new NullComparator().compare(null, 1));
-        System.out.println(new NullComparator().compare(2, 1));
-        System.out.println(new NullComparator().compare(1, 1));
-        System.out.println(new NullComparator().compare(2, null));
     }
 
     @Test
