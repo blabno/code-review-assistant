@@ -161,6 +161,7 @@ public class QANotesList {
     {
         final ListSelectionModel selectionModel = table.getSelectionModel();
         if (selectionModel.isSelectionEmpty()) {
+            Messages.showWarningDialog("Select QANote to create Youtrack ticket for", "No QANote Selected");
             return;
         }
         final ArrayList<QANote> notesToTicketize = new ArrayList<QANote>();

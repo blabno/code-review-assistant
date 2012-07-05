@@ -233,6 +233,8 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
             }
         }
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Creating Youtrack tickets") {
+            public int createdTicketsCount;
+
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
                 final YoutrackTicketManager ticketManager = YoutrackTicketManager.getInstance(project);
@@ -259,9 +261,27 @@ public class QANoteManager implements ProjectComponent, PersistentStateComponent
                     progressIndicator.setText(note.getFileName());
                     progressIndicator.setText2(String.format("%d. %s", note.getId(), note.getDescription()));
                     final IssueWrapper ticket = ticketManager.createTicket(note.getDescription(), note.getFileName());
+                    createdTicketsCount++;
                     note.setTicket(ticket.getId());
                     save(note);
                 }
+            }
+
+            @Override
+            public void onSuccess()
+            {
+                notifyTicketsCreated();
+            }
+
+            private void notifyTicketsCreated()
+            {
+                QANotifications.inform("Finished creating Youtrack tickets", String.format("Created %d tickets", createdTicketsCount), project);
+            }
+
+            @Override
+            public void onCancel()
+            {
+                notifyTicketsCreated();
             }
 
             private void save(QANote note)
